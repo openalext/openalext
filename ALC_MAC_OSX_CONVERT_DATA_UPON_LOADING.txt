@@ -1,0 +1,4 @@
+***** ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING
+This extension allows the caller to tell OpenAL to preconvert to the native CoreAudio format, the audio data passed to the 
+library with the alBufferData() call. Preconverting the audio data, reduces CPU usage by removing an audio data conversion 
+(per source) at render time at the expense of a larger memory footprint.

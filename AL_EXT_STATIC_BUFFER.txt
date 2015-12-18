@@ -1,0 +1,6 @@
+***** AL_EXT_STATIC_BUFFER
+This extension provides a means for the caller to avoid the overhead associated with the alBufferData call which performs a physical copy 
+of the data provided by the caller to internal buffers. When using the AL_EXT_STATIC_BUFFER extension, OpenAL's internal buffers use 
+the data pointer provided by the caller for all data access.
+
+Note: It is important that the caller does NOT free these buffers until OpenAL returns from alDeleteBuffers() without returning an error.

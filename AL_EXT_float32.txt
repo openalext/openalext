@@ -1,0 +1,2 @@
+**** AL_EXT_float32
+The AL_EXT_float32 extension provides support for 32-bit float audio data (mono/stereo).

@@ -1,0 +1,10 @@
+***** ALC_EXT_ASA
+The ASA (Apple Spatial Audio) extension currently provides three main effects: reverb, occlusion and obstruction.
+
+  Reverb:   A reverb effect with multiple presets and quality settings. Post EQ settings available for additional tonal control.
+
+  Occlusion:  An effect that applies a low pass filter to an OpenAL source object for simulating objects 
+      in different 'spaces' from the listener (post EQ, causing send to reverb to also be filtered)
+
+  Obstruction:  An effect that applies a low pass filter to an OpenAL source object for simulating objects being 'obstructed' 
+      from the listener (pre-EQ, allowing high frequencies of source object to remain in the reverb)

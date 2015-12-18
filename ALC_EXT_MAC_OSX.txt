@@ -1,0 +1,10 @@
+***** ALC_EXT_MAC_OSX
+The 'Apple Mac OSX Extension' contains various support for controlling aspects of Apple's OpenAL implementation that are specific to the platform.
+The extension provides settings for:
+
+  Rendering Quality   -   The Rendering Quality setting enables the application to specify from a number of available stereo/multi-channel 
+          rendering algorithms.
+  Channel Count     -   Apple's OpenAL implementation will render to stereo or multi-channel audio hardware based on the users system setup. 
+          This setting can be used to force stereo rendering on a multi speaker audio system.
+  Maximum Buses     -   This sets a maximum number of buses allocated by the system's 3DMixer AudioUnit, which provides the spatialized mixing of OpenAL
+  Output Rate     -   Allows the application to optimize audio mixing performance based on the sampling rate of its audio assets (files)

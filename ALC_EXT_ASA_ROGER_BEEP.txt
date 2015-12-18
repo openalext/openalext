@@ -1,0 +1,3 @@
+**** ALC_EXT_ASA_ROGER_BEEP
+This extension allows use of the Roger Beep effect to simulate effects such as Walkie Talkie noise. Effect is activated when
+the source audio data falls below a specified db threshold for a specified time.

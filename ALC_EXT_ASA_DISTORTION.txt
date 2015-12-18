@@ -1,0 +1,3 @@
+**** ALC_EXT_ASA_DISTORTION
+This extension applies a distortion effect to a specified OpenAL source object. Different settings can be used to specify the style and 
+degree of distortion applied.

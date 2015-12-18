@@ -1,0 +1,10 @@
+**** AL_EXT_SOURCE_NOTIFICATIONS
+This extension provides an alternative to the OpenAL polling mechanism used for obtaining state about Source and Buffer objects. The caller subscribes to
+the notification scheme by providing a callback function for the desired notification type. When a notification is received, the caller should then proceed
+to get the current state using the native OpenAL api calls.
+
+The available notification types are
+
+  AL_SOURCE_STATE   - there is a change in the source's state
+  AL_BUFFERS_PROCESSED  - there is a change in the number of buffers processed
+  AL_QUEUE_HAS_LOOPED   - the buffer queue has looped (if looping is enabled)
