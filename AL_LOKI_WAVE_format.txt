@@ -1,0 +1,2 @@
+#define AL_LOKI_WAVE_format 1
+#define AL_FORMAT_WAVE_EXT                       0x10002

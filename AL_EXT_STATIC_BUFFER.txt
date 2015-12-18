@@ -10,3 +10,7 @@ Note: It is important that the caller does NOT free these buffers until OpenAL r
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 typedef ALvoid  AL_APIENTRY (*alBufferDataStaticProcPtr) (ALint bid, ALenum format, const ALvoid* __nonnull data, ALsizei size, ALsizei freq);
+
+#ifdef AL_ALEXT_PROTOTYPES
+AL_API ALvoid AL_APIENTRY alBufferDataStatic(const ALint buffer, ALenum format, ALvoid *data, ALsizei len, ALsizei freq);
+#endif

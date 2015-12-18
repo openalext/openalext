@@ -1,0 +1,2 @@
+#define ALC_EXT_disconnect 1
+#define ALC_CONNECTED                            0x313

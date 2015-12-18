@@ -1,0 +1,4 @@
+#define ALC_LOKI_audio_channel 1
+#define ALC_CHAN_MAIN_LOKI                       0x500001
+#define ALC_CHAN_PCM_LOKI                        0x500002
+#define ALC_CHAN_CD_LOKI                         0x500003
