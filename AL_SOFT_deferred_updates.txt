@@ -1,0 +1,147 @@
+Name
+
+    AL_SOFT_deferred_updates
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows applications to defer playback state updates. With
+    unextended OpenAL, the playback state would respond to changes as soon as
+    it could handle them, which makes it effectively impossible to ensure
+    multiple changes occur at the same time without the potential of a
+    "partial" update (where one change is heard without the other). This
+    extension provides a way to prevent state updates from occuring until
+    they've all been done, where they will all apply at once.
+
+Issues
+
+    Q: This extension provides new methods to stop and resume updates. Some
+       drivers from Creative have similar capabilities, but use the existing
+       alcSuspendContext and alcProcessContext functions. Why not do it the
+       same way?
+    A: The behavior of the alcSuspendContext and alcProcessContext functions
+       has historically differed on different OSs. It would work on Windows,
+       but new functions ensure compatibility with old apps that may be using
+       them in a way that would be incompatible with this behavior.
+
+       New apps that wish to use this extension, while also falling back to
+       Creative's method, can do so by creating two simple wrappers:
+
+       void AL_APIENTRY wrap_DeferUpdatesSOFT(void)
+       {
+           alcSuspendContext(alcGetCurrentContext());
+       }
+
+       void AL_APIENTRY wrap_ProcessUpdatesSOFT(void)
+       {
+           alcProcessContext(alcGetCurrentContext());
+       }
+
+       If the AL_SOFT_deferred_updates extension exists, set your function
+       pointers to the alDeferUpdatesSOFT and alProcessUpdatesSOFT functions
+       from the AL. If the extension doesn't exist, set your function pointers
+       to your wrap_DeferUpdatesSOFT and wrap_ProcessUpdatesSOFT functions
+       instead. The appropriate methods to defer and resume updates will then
+       be called when using the function pointers.
+
+    Q: Will samples continue to render and play while updates are deferred?
+    A: Yes. The point of this extension is to allow apps to "batch" changes
+       made over a period of time so that they apply all at once. Having
+       samples continue to render and play will ensure uninterrupted audio
+       playback, even if updates are deferred for a while.
+
+    Q: What state changes are actually deferred?
+    A: Pretty much all listener, source, and auxiliary slot property changes
+       that affect the immediate audio output. This includes (but is not
+       strictly limited to) listener and source gain, position, pitch, and
+       velocity, as well as the source filter and offset properties. Changes
+       to an auxiliary slot's gain and effect properties will be deferred too.
+
+       Setting a source state to AL_PLAYING or AL_PAUSED (via alSourcePlay[v]
+       or alSourcePause[v]) is also deferred, but not AL_STOPPED or AL_INITIAL
+       (via alSourceStop[v] or alSourceRewind[v]). This is so an application
+       that stops a source can immediately detach and delete or modify buffers
+       without worrying about if changes are being processed or not. An app
+       that wants to start a source at the same time another stops can play
+       the new source and pause the old one, for which both actions are
+       deferred. Then later, when changes are being processed again, the newly
+       paused source can be stopped and cleaned up as needed.
+
+       Changes to a source's buffer queue are NOT deferred. As they merely
+       update the list of buffers a source plays, without directly changing
+       the playback state of the source, queueing and unqueueing buffers takes
+       effect immediately.
+
+    Q: Should these methods be recursive? That is, sould calling
+       alDeferUpdatesSOFT multiple times require the same number of calls to
+       alProcessUpdatesSOFT before processing resumes?
+    A: No. There's no compelling reason to do it that way, and making the
+       functions non-recursive matches the batching behavior of Creative's
+       drivers. Note that you can call alDeferUpdatesSOFT multiple times, but
+       only a single alProcessUpdatesSOFT call is needed to resume processing.
+
+New Procedures and Functions
+
+        void alDeferUpdatesSOFT(void);
+
+        void alProcessUpdatesSOFT(void);
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alGetBoolean, alGetBooleanv (as
+    well as the Integer, Float, and Double variants):
+
+        AL_DEFERRED_UPDATES_SOFT                 0xC002
+
+Additions to Specification
+
+    Deferring Updates for Synchronizing Playback Changes
+
+    Sometimes it is desirable to ensure multiple state changes take effect at
+    the same time. Normally this isn't possible due to the AL processing
+    updates asychronously, so the playback state can be updated with only part
+    of the changes having been specified. An application can prevent these
+    updates by calling
+
+    void alDeferUpdatesSOFT(void);
+
+    When called, samples will continue to render and be sent to the output
+    device, but the effects of changing playback properties, such as the
+    source or listener gain, or auxiliary slot gain or effect if EFX is
+    supported, among others, will be deferred. Multiple changes can be batched
+    so that they all apply at once at a later time.
+
+    To resume updates, call
+
+    void alProcessUpdatesSOFT(void);
+
+    Once called, all pending deferred updates will be processed. Any following
+    state changes will also apply as normal.
+
+
+    To query whether updates are currently being deferred, the enum value
+
+        AL_DEFERRED_UPDATES_SOFT
+
+    may be passed as the parameter to the alGetBoolean family of query
+    functions. If updates are being deferred, AL_TRUE will be returned.
+    Otherwise, AL_FALSE will be.
+
+Errors
+
+    None.

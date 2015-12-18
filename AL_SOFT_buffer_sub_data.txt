@@ -1,0 +1,191 @@
+Name
+
+    AL_SOFT_buffer_sub_data
+
+Contributors
+
+    Chris Robinson
+    Daniel Peacock
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows an application to modify a section of buffered
+    sample data while the buffer is in use.
+
+Issues
+
+    Q: What is the purpose of this extension? Buffer queues are already
+       provided to handle streaming.
+    A: Basic streaming is arguably handled more effectively with buffer
+       queues, but this method is a departure from of other sound APIs and has
+       its own limitations, particularly with interactive audio events.
+
+       With real-time mixing, for example, an application may have mixed a
+       length of audio, but then an event is triggered that invalidates the
+       unplayed portion of the mix. Under normal OpenAL, the only options for
+       dealing with this are:
+
+       1) Stop the source, empty the buffer queue, buffer and queue the new
+          data, then restart the source. This is undesireable in that it very
+          likely will cause an audible break in the playback.
+       2) Keep a high-priority thread which queues as little as possible that
+          lets the stream run without interruption. Such as setup is difficult
+          to manange, can have trouble with sudden spikes in CPU consumption,
+          and still has a larger-than-necessary buffer.
+
+       Allowing an application to modify a buffer as its being played solves
+       this issue, as it can write directly into the buffer where the updated
+       audio can be heard with little to no delay.
+
+    Q: How should the offset and length be specified?
+    A: Using compressed bytes. This keeps it easy on the app which passed the
+       compressed byte size to alBufferData, and will not know of any internal
+       conversion.
+
+    Q: How are compressed formats handled?
+    A: When modifying compressed data, the byte offset and length specified
+       must be block aligned (eg. for mono IMA4, it must use multiples of 36).
+       Complex compressed formats, like Vorbis or MP3, may not be modified
+       this way.
+
+    Q: Should there be a method to retrieve the source's "write cursor"?
+    A: Yes. When updating buffers that play on a hardware voice, it would be
+       desireable to make sure the section currently being read by the
+       hardware isn't modified. The section being read is given by the new
+       AL_*_RW_OFFSETS_SOFT read-only source properties.
+
+    Q: What can be said about the read/write cursors when the buffer is
+       playing from multiple sources?
+    A: Nothing. The read/write cursors only define the area where the given
+       source is reading. The application is responsible for making sure the
+       buffer is only in use by one source at a time, or otherwise makes sure
+       to only write data where no other active sources are reading.
+
+New Procedures and Functions
+
+    void alBufferSubDataSOFT(ALuint buffer, ALenum format, const ALvoid *data,
+                             ALsizei offset, ALsizei length);
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alGetSourceiv and alGetSourcefv:
+
+        AL_BYTE_RW_OFFSETS_SOFT                  0x1031
+        AL_SAMPLE_RW_OFFSETS_SOFT                0x1032
+
+Additions to Specification
+
+    Append to Section 4.3.2, Source Attributes, Offset heading
+
+    Table 4.x. Source AL_SAMPLE_RW_OFFSETS_SOFT Attribute
+
+    Name                       Signature  Values       Default
+    -------------------------  ---------  -----------  -------
+    AL_SAMPLE_RW_OFFSETS_SOFT  fv, iv     [0.0f, any]  N/A
+
+    Query only. Queries the current read and write cursor offsets, expressed
+    in samples (the values will loop back to 0 for looping sources). For a
+    compressed format, these values will represent an exact offset within the
+    uncompressed data.
+
+    The two offset values are relative to the beginning of all the queued
+    buffers for the source. The first value returned in the array is the
+    offset to the sample currently being read by the AL. The second value is
+    the offset an application may safely write to with an alBufferSubDataSOFT
+    call.
+
+    If the source is not in an AL_PLAYING state, the read and write offsets
+    will be the identical.
+
+    Table 4.x. Source AL_BYTE_RW_OFFSETS_SOFT Attribute
+
+    Name                     Signature  Values       Default
+    -----------------------  ---------  -----------  -------
+    AL_BYTE_RW_OFFSETS_SOFT  fv, iv     [0.0f, any]  N/A
+
+    Query only. Queries the current read and write cursor offsets, expressed
+    in bytes (the values will loop back to 0 for looping sources). For a
+    compressed format, these values may represent an approximate offset within
+    the compressed data buffer.
+
+    The two offset values are relative to the beginning of all the queued
+    buffers for the source. The first value returned in the array is the
+    offset to the data block currently being read by the AL. The second value
+    is the byte offset an application may safely write to.
+
+    If the source is not in an AL_PLAYING state, the read and write offsets
+    will be the identical.
+
+
+    Modify section 5.3.4, Specifying Buffer Content
+
+    "... The implementation has to dereference, e.g. copy, the data during
+    alBufferData execution. If NULL is specified for the sample data, the
+    internal data will be undefined (and should be specified by one or more
+    calls to alBufferSubDataSOFT before use)."
+
+
+    Add section 5.3.4.1, Updating Buffer Content
+
+    "To update a section of buffered sample data, use the function
+
+      void alBufferSubDataSOFT(ALuint buffer, ALenum format,
+                               const ALvoid *data, ALsizei offset,
+                               ALsizei length);
+
+    The named <buffer> may be attached to a source (either queued or by the
+    AL_BUFFER property), and the source does not need to be stopped, paused,
+    or in an initial state to be modified.
+
+    The <offset> value is the number of bytes from the start of the original
+    data, and <length> is the number of bytes of the original data, to modify.
+    If either <offset> or <length> are negative, or if the sum of <offset> and
+    <length> reaches beyond the end of the buffer, an AL_INVALID_VALUE error
+    is generated. For compressed formats, <length> and <offset> must be block
+    aligned. Complex compressed formats (such as those with no constant block
+    alignment), may not be modified and will result in an AL_INVALID_ENUM
+    error.
+
+    The specified <format> is the sample format of the passed <data>. The
+    passed format must exactly match the format passed to alBufferData, or an
+    AL_INVALID_ENUM error is generated.
+
+
+    When modifying a playing source's buffer, an application must take care to
+    not modify the section that is currently being played. The read-only
+    source attributes
+
+      AL_BYTE_RW_OFFSETS_SOFT
+      AL_SAMPLE_RW_OFFSETS_SOFT
+
+    may be used to retrieve the read and write cursor offsets. Behavior is
+    undefined if an attempt is made to modify buffer data between the read and
+    write offsets."
+
+
+Errors
+
+    The error AL_INVALID_ENUM is generated if <format> does not match the
+    format previously passed to alBufferData.
+
+    The error AL_INVALID_VALUE is generated if <buffer> was not previously
+    created with alBufferData.
+
+    The error AL_INVALID_ENUM is generated if <format> is a complex compressed
+    format.
+
+    The error AL_INVALID_VALUE is generated if <offset> or <length> is
+    negative, or they specify a segment that is beyond the range of the
+    buffer.

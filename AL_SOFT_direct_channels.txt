@@ -1,0 +1,76 @@
+Name
+
+    AL_SOFT_direct_channels
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependancies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows a multi-channel source to play without virtualized
+    output speakers. By default, OpenAL requires buffer channels to be down-
+    mixed to the output channel configuration, possibly using HRTF or other
+    virtualization techniques to give a sense of speakers that may not be
+    physically present. Sometimes audio tracks are authored with their own
+    spatialization effects, where the AL's virtualization methods can cause a
+    notable decrease in audio quality.
+
+    This extension provides a mechanism for applications to specify whether
+    audio should be filtered according to the AL's channel virtualization
+    rules for multi-channel buffers.
+
+Issues
+
+    Q: Should this be a buffer property or source property?
+    A: Source property. This gives more flexibility to the app to decide
+       whether some piece of audio should be filtered or not.
+
+    Q: Should this work on mono (3D) sources?
+    A: No. Besides most people not having a mono speaker, or possibly even a
+       front-center speaker, its main intent is for stereo tracks that have
+       spatialization effects pre-applied.
+
+    Q: Are environmental effects, provided by EFX for example, still applied?
+    A: Yes. There's no compelling reason to disable them, particularly when
+       the application has to enable them on a per-source basis in the first
+       place.
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alSourcei, alSourceiv,
+    alGetSourcei, and alGetSourceiv:
+
+        AL_DIRECT_CHANNELS_SOFT                  0x1033
+
+Additions to Specification
+
+    Append to Section 4.3.2, Source Attributes
+
+    Table 4.x Channel Virtualization
+
+    Name                       Signature  Values               Default
+    -------------------------  ---------  -------------------  ----------
+    AL_DIRECT_CHANNELS_SOFT    i, iv      AL_TRUE, AL_FALSE    AL_FALSE
+
+    Description:
+    AL_DIRECT_CHANNELS_SOFT set to AL_TRUE indicates the audio channels are
+    not virtualized and play directly on the matching output channels if they
+    exist, otherwise they are dropped. Applies only when playing non-mono
+    buffers.

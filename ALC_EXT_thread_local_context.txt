@@ -1,0 +1,130 @@
+Name
+
+    ALC_EXT_thread_local_context
+
+Contributors
+
+    Chris Robinson
+    Jason Daly
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Overview
+
+    This extension introduces the concept of a current thread-local context,
+    with each thread able to have its own current context. The current context
+    is what the al- functions work on, effectively allowing multiple threads
+    to independently drive separate OpenAL playback contexts.
+
+Issues
+
+    Q: Since unextended OpenAL allows applications to specify the current
+       context on a process-wide basis, what is considered to be the "current"
+       context if both a process-wide and thread-local context are set as
+       current?
+    A: A non-NULL thread-local context takes precedence over any process-wide
+       context set. Doing it this way allows new code, such as a plugin, to
+       work separately from the main application that may not be aware of
+       thread-local contexts. It also allows such a plugin to revert operation
+       back to the current process-wide context by setting the current thread-
+       local context to NULL.
+
+       As a consequence, alcGetCurrentContext will return the current thread-
+       local context for the calling thread if it's non-NULL, otherwise it
+       will return the current process-wide context. alcGetThreadContext may
+       be used to retrieve the current thread-local context only, even if it
+       is NULL.
+
+    Q: What is the behavior of a call to alcMakeContextCurrent?
+    A: For certain cases, such as the aforementioned plugin, it is possible
+       for some code to use the process-wide functions and other code to use
+       the thread-local functions. These options were considered to handle
+       such cases, and maintain backwards compatibility:
+
+       1) Change the current process-wide context only, and leave the current
+       thread-local process alone. This would have the side effect of not
+       changing the context affecting the thread if the current thread-local
+       context is not NULL.
+
+       2) Change the current thread-local context if it's not NULL, as well as
+       the process-wide context. This would change the current context, but
+       has the problem of inconsistent behavior depending on whether the
+       current thread-local context is NULL or not.
+
+       3) Change the current process-wide context and set the current thread-
+       local context to NULL. This has the side effect of changing the current
+       thread-local context, so that the new current process-wide context will
+       be used.
+
+       Option 3 was chosen to maintain alcMakeContextCurrent's behavior of
+       changing the context for the calling thread, as well as maintaining
+       backwards compatibility with code not aware of thread-local contexts.
+
+    Q: Can a context be made locally current on multiple threads at once?
+    A: Yes. Unlike OpenGL, which disallows setting the same context as current
+       on multiple threads, OpenAL is already designed for one context being
+       used on multiple threads at once. It also avoids the issue of certain
+       resources (like sources) not being shared between contexts.
+
+New Procedures and Functions
+
+    ALCboolean  alcSetThreadContext(ALCcontext *context);
+    ALCcontext* alcGetThreadContext(void);
+
+New Tokens
+
+    None.
+
+Additions to Specification
+
+    Replace Section 6.2.3 "Selecting a Context for Operation", p. 50-51, with:
+
+    To make a Context current with respect to OpenAL operation on the current
+    thread, alcSetThreadContext is used. The context parameter can be NULL or
+    a valid context pointer. Using NULL results in no thread-specific context
+    being current in the calling thread, which is useful when shutting OpenAL
+    down.
+
+    ALCboolean alcSetThreadContext(ALCcontext *context);
+
+    The function alcMakeContextCurrent can be used to set a process-wide
+    context that can affect all threads of the OS process. Threads that don't
+    have a current thread-specific context will use the process-wide context
+    instead. Additionally, a thread that makes a successful call to
+    alcMakeContextCurrent will have its thread-specific context set to NULL.
+
+    ALCboolean alcMakeContextCurrent(ALCcontext *context);
+
+    The return value (ALC_TRUE or ALC_FALSE) will reflect whether or not an
+    error occurred in either of these calls. Standard error conditions are
+    also set during execution of these calls (ALC_INVALID_CONTEXT for an
+    invalid context pointer, for instance).
+
+
+    Replace Section 6.3.1 "Query for Current Context", p. 52, with:
+
+    The application can query for, and obtain a handle to, the current context
+    for the calling thread. To get a handle for the context that is currently
+    affecting the thread, use alcGetCurrentContext. This will return a handle
+    to the current thread-specific context if it is not NULL, otherwise it
+    will return the last set process-wide context.
+
+    ALCcontext * alcGetCurrentContext(void);
+
+    To retrieve a handle to the thread-specific context of the calling thread,
+    use alcGetThreadContext. This function will return NULL if no thread-
+    specific context is set.
+
+    ALCcontext * alcGetThreadContext(void);
+
+
+Errors
+
+    An ALC_INVALID_CONTEXT error is generated if a non-NULL, invalid context
+    pointer is passed to alcSetThreadContext.

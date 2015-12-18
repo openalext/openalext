@@ -1,0 +1,123 @@
+Name
+
+    AL_SOFT_block_alignment
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+    This extension interacts with AL_SOFT_buffer_samples.
+    This extension interacts with AL_SOFT_buffer_sub_data.
+    This extension interacts with AL_EXT_IMA4.
+    This extension interacts with AL_SOFT_MSADPCM.
+
+Overview
+
+    This extension provides a mechanism for specifying block alignment
+    properties for sample data. This is useful for, though not strictly
+    limited to, ADPCM compression where the block alignment is specified in
+    the media file header instead of the data stream, and controls the
+    decoding process.
+
+Issues
+
+    Q: How should the block alignment be specified?
+    A: As the number of sample frames per block. Although certain formats,
+       like .wav, store the block alignment in bytes, sample frames is easier
+       to manage.
+
+    Q: How do you convert the block alignment from bytes to sample frames?
+    A: For IMA4, the conversion is:
+
+       sample_align = (byte_align/nchannels - 4)/4*8 + 1
+
+       For MSADPCM, the conversion is:
+
+       sample_align = (byte_align/nchannels - 7)*2 + 2
+
+       The byte alignment is considered invalid if the divisions don't produce
+       an exact integer, or if the subtraction would go negative or underflow.
+       Note in particular that the byte alignment for IMA4 must be a multiple
+       of 4*nchannels since the nibbles are stored in 4-byte runs.
+
+    Q: How does changing the block alignment affect sample data that's already
+       loaded?
+    A: It doesn't. The block alignment is used when unpacking (reading) and
+       packing (writing) samples when the application calls, but does not
+       affect how stored data is interpreted.
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alBufferi, alBufferiv,
+    alGetBufferi, and alGetBufferiv:
+
+        AL_UNPACK_BLOCK_ALIGNMENT_SOFT           0x200C
+        AL_PACK_BLOCK_ALIGNMENT_SOFT             0x200D
+
+Additions to Specification
+
+    Sample Data Block Alignment
+
+    Sample data is read and written as a collection of one or more blocks. A
+    block is a collection of one or more sample frames, which in turn contain
+    one sample for each channel.
+
+    Table x.0. Buffer AL_UNPACK_BLOCK_ALIGNMENT_SOFT Attribute
+
+    Name                              Signature  Values          Default
+    --------------------------------  ---------  --------------  -------
+    AL_UNPACK_BLOCK_ALIGNMENT_SOFT    i, iv      [0, MAX_INT]    0
+
+    Table x.1. Buffer AL_PACK_BLOCK_ALIGNMENT_SOFT Attribute
+
+    Name                            Signature  Values          Default
+    ------------------------------  ---------  --------------  -------
+    AL_PACK_BLOCK_ALIGNMENT_SOFT    i, iv      [0, MAX_INT]    0
+
+
+    The buffer's block alignment attributes specify the number of sample
+    frames in each block when unpacking and packing sample data. Unpacking
+    occurs during calls to alBufferData, and alBufferSubDataSOFT if
+    AL_SOFT_buffer_sub_data is supported, and alBufferSamplesSOFT and
+    alBufferSubSamplesSOFT if AL_SOFT_buffer_samples is supported. Packing
+    occurs during calls to alGetBufferSamplesSOFT if AL_SOFT_buffer_samples is
+    supported.
+
+    By default, the block alignment for unpacking and packing samples is set
+    to 0. This indicates the minimum alignment (1) is used for PCM sample
+    formats.
+
+    If the AL_EXT_IMA4 extension is supported, the block alignment controls
+    the number of sample frames encoded per IMA ADPCM block, and so also
+    affects the bitrate. The block alignment must be a multiple of 8, plus 1
+    (i.e. alignment = n*8 + 1), or an AL_INVALID_VALUE error will occur during
+    unpacking or packing IMA4 samples. A block alignment of 0 indicates a
+    default of 65 sample frames per block for IMA4 sample formats.
+
+    If the AL_SOFT_MSADPCM extension is supported, the block alignment
+    controls the number of sample frames encoded per MSADPCM block, and so
+    also affects the bitrate. The block alignment must be a multiple of 2, or
+    an AL_INVALID_VALUE error will occur during unpacking or packing MSADPCM
+    samples. A block alignment of 0 indicates a default of 64 sample frames
+    per block for MSADPCM sample formats.
+
+Errors
+
+    An AL_INVALID_VALUE error is generating during unpacking or packing
+    operations if the unpack block alignment or pack block alignment isn't an
+    appropriate value for the format.

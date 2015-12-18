@@ -1,0 +1,130 @@
+Name
+
+    AL_EXT_source_distance_model
+
+Contributors
+
+    Chris Robinson
+    Daniel Peacock
+    Bob Aron
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependancies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows each source to specify a distance model, instead of
+    being restricted to one distance model for every source in the context. It
+    provides a mechanism for applications to apply different models to each
+    source, without the burden of manually applying the attenuation through
+    the source gain.
+
+Issues
+
+    Q: ALint and ALenum are being used inter-changeably. Is that OK? Are they
+       always the same size (32 bits) on all platforms?
+    A: Yes, and yes. Both ALint and ALenum are typedef'd to int, and OpenAL
+       already passes ALenum values through an ALint (such as when calling
+       alGetInteger with AL_DISTANCE_MODEL), so there should be no problems
+       passing a distance model enum through al[Get]Sourcei.
+
+    Q: What happens when some of the sources are set to something other than
+       the default and then the application calls alDistanceModel()?
+    A: The sources' property is maintained separately from the context's
+       distance model setting. Calling alDistanceModel will set the context's
+       setting, which is only used when the AL_SOURCE_DISTANCE_MODEL context
+       state is disabled (the default). Similarly, setting a source's
+       AL_DISTANCE_MODEL property will only have an audible affect when the
+       context state is enabled.
+
+    Q: What is the purpose of having different distance models for each
+       source?
+    A: Different sounds may want different rolloff properties. For instance,
+       some sounds may want to follow a more natural inverse distance rolloff,
+       while others may want to use linear or a manual method to ensure a sound
+       reaches 0 gain at max distance. Unextended OpenAL only allows using
+       custom rolloffs by setting the AL_NONE distance model or a 0 rolloff
+       factor, both of which can have other side effects (eg. disabling air
+       absorption effects from EFX).
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <target> parameter of alEnable, alDisable, and
+    alIsEnabled:
+
+        AL_SOURCE_DISTANCE_MODEL                 0x200
+
+Additions to Specification
+
+    Append Section 2.8 (Controlling AL Execution, p. 17)
+
+    The table below specifies the acceptable target capabilities:
+
+    Table 2.x: Context capability targets
+
+    Name                      Description
+    ------------------------  -----------------
+    AL_SOURCE_DISTANCE_MODEL  Enables use of the distance model specified by
+                              the sources' AL_DISTANCE_MODEL property,
+                              superceding the context's distance model setting
+                              (default is disabled)
+
+
+    Modify Table 3.1 (Numerical Query Definitions), p. 22
+
+    Name                      Description
+    -----------------         -----------------
+    ...
+    AL_DISTANCE_MODEL         The current context-wide distance model
+
+
+    Modify Section 3.4 (Attenuation By Distance), p. 24
+
+    (modify starting from third paragraph)
+    OpenAL currently supports three modes of operation with respect to
+    distance attenuation, including one that is similar to the IASIG I3DL2
+    model. The application can choose one of these models (or chooses to
+    disable distance-dependent attenuation) on per-source or a per-context
+    basis. The function
+
+    void alDistanceModel(ALenum modelName);
+
+    changes the context distance model, used by default for all sources in the
+    current context. Legal arguments are: ...
+
+
+    Modify Section 4.3.2 (Source Attributes)
+
+    (add to subsection Distance Model Attributes, p. 38)
+    Table 4.x: DISTANCE_MODEL Attribute
+    Name                Signature   Values      Default
+    -----------------   ---------   ---------   ---------------------------
+    AL_DISTANCE_MODEL   i, iv       any valid   AL_INVERSE_DISTANCE_CLAMPED
+                                    modelName
+
+    Description: the distance model used when calculating the source's
+    distance-dependent attenuation. By default, all sources will use the
+    context's distance model. This attribute will only be used when the
+    AL_SOURCE_DISTANCE_MODEL context capability target is enabled.
+
+    The valid modelNames are the same as those for alDistanceModel (detailed
+    in Section 3.4).
+
+
+Errors
+
+    An AL_INVALID_VALUE error is generated if alSourcei or alSourceiv is
+    called with AL_DISTANCE_MODEL and the given model name is not valid.

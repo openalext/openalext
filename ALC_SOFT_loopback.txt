@@ -1,0 +1,208 @@
+Name
+
+    ALC_SOFT_loopback
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows an application to read back OpenAL's rendered audio
+    instead of having it output to an audio device on the system. Unextended
+    OpenAL will output audio to an audio device, with no mechanism to allow an
+    application to divert the audio somewhere else.
+
+Issues
+
+    Q: How are loopback devices created and handled?
+    A: Loopback devices are created using the alcLoopbackOpenDeviceSOFT
+       function. They are closed using the standard alcCloseDevice function.
+       Note that since alcLoopbackOpenDeviceSOFT is a driver-specific export
+       and returns a driver-specific device handle, the ALC and AL functions
+       used with such a device must come from the same driver.
+
+    Q: How is the device's render format specified?
+    A: By passing ALC_FORMAT_CHANNELS_SOFT, ALC_FORMAT_TYPE_SOFT, and
+       ALC_FREQUENCY attributes when creating a context. If more than one
+       context is created, the device will use the last format specified. It
+       is also considered an error to create a context without specifying all
+       three attributes.
+
+    Q: Does the device update automatically over time?
+    A: No. The speed of rendering is controlled entirely by the app, so the
+       faster the app calls to render audio, the faster the device's (and
+       subsequently, source's and buffer's) state progresses. This allows an
+       app to, for example, render an audio mix to encode with a video without
+       having to wait the amount of time it would take to actually play.
+
+    Q: Are all context attributes supported with loopback devices?
+    A: All standard ones except for ALC_SYNC and ALC_REFRESH. The precise
+       meaning of ALC_SYNC is not well defined for this situation, and the
+       refresh rate is controlled by the app to be as fast or slow as it
+       wants.
+
+New Procedures and Functions
+
+    ALCdevice* alcLoopbackOpenDeviceSOFT(ALCdevice *device);
+
+    ALCboolean alcIsRenderFormatSupportedSOFT(ALCdevice *device,
+                                              ALCsizei frequency,
+                                              ALCenum channels, ALCenum type);
+
+    void alcRenderSamplesSOFT(ALCdevice *device, ALCvoid *buffer,
+                              ALCsizei samples);
+
+New Tokens
+
+    Accepted by the <type> parameter of alcIsRenderFormatSupportedSOFT:
+
+        ALC_BYTE_SOFT                            0x1400
+        ALC_UNSIGNED_BYTE_SOFT                   0x1401
+        ALC_SHORT_SOFT                           0x1402
+        ALC_UNSIGNED_SHORT_SOFT                  0x1403
+        ALC_INT_SOFT                             0x1404
+        ALC_UNSIGNED_INT_SOFT                    0x1405
+        ALC_FLOAT_SOFT                           0x1406
+
+    Accepted by the <channels> parameter of alcIsRenderFormatSupportedSOFT:
+
+        ALC_MONO_SOFT                            0x1500
+        ALC_STEREO_SOFT                          0x1501
+        ALC_QUAD_SOFT                            0x1503
+        ALC_5POINT1_SOFT                         0x1504
+        ALC_6POINT1_SOFT                         0x1505
+        ALC_7POINT1_SOFT                         0x1506
+
+    Accepted as part of the <attrList> parameter of alcCreateContext:
+
+        ALC_FORMAT_CHANNELS_SOFT                 0x1990
+        ALC_FORMAT_TYPE_SOFT                     0x1991
+
+Additions to Specification
+
+    Loopback Devices
+
+    Loopback devices provide a way for applications to "read back" rendered
+    audio without it being sent to an actual audio device. It allows
+    applications to render audio as fast or slow as it needs, making it
+    suitable for non-real-time rendering, and so it can be passed to an audio
+    codec or something for further processing.
+
+    To open a loopback device, use the function
+
+    ALCdevice* alcLoopbackOpenDeviceSOFT(const ALCchar *deviceName);
+
+    The deviceName parameter is used to tell the AL which device or device
+    driver to use for subsequent rendering. This may be NULL for an
+    implementation-defined default, otherwise it must be a valid name returned
+    by enumeration (and further must be a device capable of loopback
+    rendering).
+
+    A loopback device behaves largely the same as a playback device. You may
+    query playback state and error codes, and create contexts, which can then
+    be set as current to generate sources and buffers like normal.
+
+    Note that loopback devices do not have either the ALC_SYNC or ALC_REFRESH
+    attributes. Attempting to query them will result in an ALC_INVALID_ENUM
+    error.
+
+
+    When creating contexts, the attribute list must specify the format used
+    for rendering. This is done with the ALC_FORMAT_CHANNELS_SOFT,
+    ALC_FORMAT_TYPE_SOFT, and ALC_FREQUENCY attributes. This controls the
+    format of the audio subsequently rendered by the device.
+
+    To check if a particular rendering format is available, use the function
+
+    ALCboolean alcIsRenderFormatSupportedSOFT(ALCdevice *device,
+                                              ALCsizei frequency,
+                                              ALCenum channels, ALCenum type);
+
+    The <device> handle is the loopback device to query, and <frequency>,
+    which must be a positive non-zero number, is the sample rate of the
+    rendered audio. <channels> is the channel configuration used for rendering
+    (see Table 1.0), and <type> is the sample type of the written audio (see
+    Table 1.1).
+
+    Table 1.0. Channel configurations
+
+    Channels          Configuration  Order
+    ----------------  -------------  -----------------------------------------
+    ALC_MONO_SOFT     Mono           mono
+    ALC_STEREO_SOFT   Stereo         front-left, front-right
+    ALC_QUAD_SOFT     Quad           front-left, front-right, rear-left,
+                                     rear-right
+    ALC_5POINT1_SOFT  5.1            front-left, front-right, front-center,
+                                     lfe, rear-left, rear-right
+    ALC_6POINT1_SOFT  6.1            front-left, front-right, front-center, 
+                                     lfe, rear-center, side-left, side-right
+    ALC_7POINT1_SOFT  7.1            front-left, front-right, front-center,
+                                     lfe, rear-left, rear-right, side-left,
+                                     side-right
+
+    Valid channel configurations. The channel order is the order which
+    interleaved samples will be written to an output buffer.
+
+    Table 1.1. Sample types
+
+    Type                     Data type  Nominal value range
+    -----------------------  ---------  -------------------------
+    ALC_BYTE_SOFT            ALCbyte           -128...+127
+    ALC_UNSIGNED_BYTE_SOFT   ALCubyte             0...+255
+    ALC_SHORT_SOFT           ALCshort        -32768...+32767
+    ALC_UNSIGNED_SHORT_SOFT  ALCushort            0...+65535
+    ALC_INT_SOFT             ALCint     -2147483648...+2147483647
+    ALC_UNSIGNED_INT_SOFT    ALCuint              0...+4294967295
+    ALC_FLOAT_SOFT           ALCfloat          -1.0...+1.0
+
+    Data types and value ranges of renderable sample types. These values are
+    normalized, meaning the ALCubyte range of 0...255 corresponds to the same
+    range as ALCshort's -32768...+32767. ALCfloat samples may specify values
+    outside of their nominal range.
+
+
+    The state of various objects on loopback devices (including processed
+    buffers and source offsets) is processed only when new samples are
+    rendered. To render samples, use the function
+
+    void alcRenderSamplesSOFT(ALCdevice *device, ALCvoid *buffer,
+                              ALCsizei samples);
+
+    The specified <device> is the loopback device which samples are rendered
+    from, using its contexts and associated buffers and sources. The number of
+    sample frames to render is specified by <samples>, which is then written
+    to <buffer>.
+
+Errors
+
+    An ALC_INVALID_VALUE error is generated if alcCreateContext is called
+    without a valid format specified.
+
+    An ALC_INVALID_VALUE error is generated if alcCreateContext is called with
+    an unsupported frequency.
+
+    An ALC_INVALID_ENUM error is generated if alcCreateContext is called with
+    an unsupported channel configuration or sample type.
+
+    An ALC_INVALID_VALUE error is generated if alcIsRenderFormatSupportedSOFT
+    is called with a zero or negative value for <frequency>.
+
+    An ALC_INVALID_DEVICE error is generated if alcLoopbackOpenDeviceSOFT is
+    called with an invalid device handle.
+
+    An ALC_INVALID_DEVICE error is generated if alcRenderSamplesSOFT or
+    alcIsRenderFormatSupportedSOFT is called with a device handle not created
+    by alcLoopbackOpenDeviceSOFT.

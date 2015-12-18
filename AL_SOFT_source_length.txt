@@ -1,0 +1,78 @@
+Name
+
+    AL_SOFT_source_length
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+    This extension trivially interacts with AL_SOFT_buffer_samples.
+
+Overview
+
+    This extension adds a method to retrieve the total length of a source's
+    buffer data in bytes, samples, and seconds, which correspond to the byte,
+    sample, and seconds offset extents. By default, OpenAL only provides a way
+    to retrieve a buffer's storage size in bytes, which does not necessarily
+    represent the data size given to alBufferData nor the byte offset extent
+    for the source's AL_BYTE_OFFSET property. The AL_SOFT_buffer_samples
+    extension allows an application to query a buffer for its length in bytes,
+    samples, and seconds, but this is only for a single buffer; a buffer queue
+    on a source still requires additional bookkeeping by the application to
+    keep track of the length of each buffer being queued and unqueued on a
+    given source. This extension aims to ease that and provide a simple query.
+
+Issues
+
+    None.
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alGetSourcei and alGetSourceiv
+    (these are the same as in AL_SOFT_buffer_samples):
+
+        AL_BYTE_LENGTH_SOFT                      0x2009
+        AL_SAMPLE_LENGTH_SOFT                    0x200A
+
+    Accepted by the <paramName> parameter of alGetSourcef and alGetSourcefv
+    (these are the same as in AL_SOFT_buffer_samples):
+
+        AL_SEC_LENGTH_SOFT                       0x200B
+
+Additions to Specification
+
+    Table x.0. Source Length Attributes
+
+    Name                   Signature  Values        Default
+    ---------------------  ---------  ------------  -------
+    AL_BYTE_LENGTH_SOFT    i, iv      [0, INT_MAX]  0
+    AL_SAMPLE_LENGTH_SOFT  i, iv      [0, INT_MAX]  0
+    AL_SEC_LENGTH_SOFT     f, fv      [0.0f, Any]   0.0f
+
+    Query only. Queries the combined lengths of all buffers on a streaming or
+    static source, in bytes, sample frames, or seconds.
+
+    The length represents the extent of the corresponding source offset; e.g.,
+    the source's AL_BYTE_OFFSET will range from 0 (inclusive) to
+    AL_BYTE_LENGTH_SOFT (exclusive).
+
+Errors
+
+    An AL_INVALID_OPERATION error is generated if an attempt is made to set
+    the AL_BYTE_LENGTH_SOFT, AL_SAMPLE_LENGTH_SOFT, and AL_SEC_LENGTH_SOFT
+    attributes on a source.

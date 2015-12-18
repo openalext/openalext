@@ -1,0 +1,469 @@
+Name
+
+    AL_SOFT_buffer_samples
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+    This extension interacts with AL_SOFT_loop_points.
+    This extension interacts with AL_SOFT_buffer_sub_data.
+    This extension trivially interacts with AL_EXT_FLOAT32.
+    This extension trivially interacts with AL_EXT_MCFORMATS.
+
+Overview
+
+    This extension provides a more flexible mechanism for loading buffer data,
+    as well as a method to retrieve buffer data. Unextended OpenAL only
+    provides a method to specify a single buffer format when loading data,
+    which defines the data given by the application. The AL is given leeway in
+    converting the data, so that it is possible or more efficient to use
+    internally. However, there are some drawbacks to this approach:
+
+    * The conversion done by the implementation is hidden from the app. This
+      makes it difficult for the app to know what kind of precision it will
+      have, and impossible to request a storage precision.
+
+    * Conversion is not guaranteed, so the application can be restricted in
+      the formats that can be loaded depending on the implementation.
+
+    If the application could specify the internal storage format, as well as
+    use a separate format to specify the incoming data's format, it would
+    allow to add more input formats (signed 8-bit, 32-bit int, and float, for
+    example), with no undue burden placed on the implementation beyond needing
+    some conversion routines. The application can then be assured that many
+    different formats can be loaded, even if storage is restricted to a
+    comparatively small subset.
+
+    In addition, unextended OpenAL does not have any methods for updating only
+    a portion of a buffer, nor a method to retrieve the data from a buffer.
+
+Issues
+
+    Q: Should this extension be an EXT or SOFT?
+    A: For the time being, SOFT. However, if there's interest from other
+       implementations, it can be changed to EXT.
+
+    Q: What storage formats should be guaranteed to be supported?
+    A: OpenAL has 8- and 16-bit, mono and stereo, formats standard, so this
+       extension should as well.
+
+       Supporting 32-bit float and multi-channel formats may be too much to
+       require of an implementation that wishes to support this extension. To
+       work with this, as well as future extensibility, a method to query
+       other supported storage formats is provided.
+
+       Note that this doesn't affect the supported user-supplied data formats
+       (eg, AL_SHORT, AL_INT, AL_FLOAT). Those are expected to all be
+       supported by the implementation. Only storage is restricted this way.
+
+    Q: In some cases, an implementation would convert to a single bit-depth
+       for storage. How could that work with 8- and 16-bit storage being
+       required?
+    A: An implementation is allowed to pad samples in a buffer's internal
+       storage. This way, an implementation that only handles 16-bit samples
+       for mixing can support 8-bit samples that are padded with another 8
+       bits. It should be noted, however, that an application should have a
+       reasonable expectation of the requested precision. Meaning, if an
+       application provides 16-bit data and specifies 8-bit storage, and the
+       implementation uses 8 bits of padding with 8-bit storage, the padding
+       bytes should be cleared so that there are 256 levels of amplitude in
+       the stored sample data.
+
+    Q: How should an application query the supported storage formats?
+    A: Using alIsBufferFormatSupportedSOFT. Traditionally, checking for
+       supported formats was done by calling alGetEnumValue with the
+       stringified format enum, but this was a sub-par solution. An explicit
+       query returning a true/false boolean is much cleaner.
+
+    Q: Can a storage format's channel configuration differ from the input
+       channel configuration (eg, AL_QUAD16 storage with AL_STEREO input)?
+    A: Not in this extension. It will result in an AL_INVALID_ENUM error. A
+       future extension should be expected to lift this restriction and define
+       what kind of channel mapping should occur.
+
+    Q: How are buffer lengths and offsets specified?
+    A: Using uncompressed sample frames. This helps avoid issues associated
+       with sizes that contain a partial frame.
+
+    Q: Should there be more buffer attributes defined?
+    A: Yes. An application should have a way of querying the storage format
+       and the number of sample frames, as these are values used by the
+       buffer and useful to the application.
+
+       It also makes sense to have a query for the length in bytes that
+       directly corresponds to the source's byte offset. The buffer's AL_SIZE
+       attribute is intended to report the actual size used for storage, while
+       the source's byte offset is adjusted to match the original size and
+       format. Because of that, there's no way for an application to reliably
+       query the extent of the byte offset.
+
+       Finally, since the buffer's byte and sample lengths are provided, the
+       length in seconds may as well be, too.
+
+    Q: What can be said about AL_BYTE_OFFSET and the like, which normally
+       would be adjusted to the buffer's input format?
+    A: They are adjusted according to the storage format of the buffer, as if
+       it was packed, interleaved data (an implementation does not have to
+       actually store the data in a packed or interleaved fashion, but the
+       offset should be treated as if it was).
+
+    Q: Should this extension be allowed to modify playing buffers?
+    A: alBufferSubSamplesSOFT and alGetBufferSamplesSOFT can be called on
+       playing buffers, but not alBufferSamplesSOFT. As a consequence, it
+       shares the AL_BYTE_RW_OFFSETS_SOFT and AL_SAMPLE_RW_OFFSETS_SOFT source
+       properties with AL_SOFT_buffer_sub_data.
+
+
+New Procedures and Functions
+
+    void alBufferSamplesSOFT(ALuint buffer, ALuint samplerate,
+                             ALenum internalformat, ALsizei samples,
+                             ALenum channels, ALenum type,
+                             const ALvoid *data);
+
+    void alBufferSubSamplesSOFT(ALuint buffer, ALsizei offset,
+                                ALsizei samples, ALenum channels, ALenum type,
+                                const ALvoid *data);
+
+    void alGetBufferSamplesSOFT(ALuint buffer, ALsizei offset,
+                                ALsizei samples, ALenum channels, ALenum type,
+                                ALvoid *data);
+
+    ALboolean alIsBufferFormatSupportedSOFT(ALenum format);
+
+New Tokens
+
+    Accepted by the <internalformat> parameter of alBufferSamplesSOFT (values
+    are shared with standard OpenAL, AL_EXT_FLOAT32, and AL_EXT_MCFORMATS):
+
+        AL_MONO8_SOFT                            0x1100
+        AL_MONO16_SOFT                           0x1101
+        AL_MONO32F_SOFT                          0x10010
+        AL_STEREO8_SOFT                          0x1102
+        AL_STEREO16_SOFT                         0x1103
+        AL_STEREO32F_SOFT                        0x10011
+        AL_QUAD8_SOFT                            0x1204
+        AL_QUAD16_SOFT                           0x1205
+        AL_QUAD32F_SOFT                          0x1206
+        AL_REAR8_SOFT                            0x1207
+        AL_REAR16_SOFT                           0x1208
+        AL_REAR32F_SOFT                          0x1209
+        AL_5POINT1_8_SOFT                        0x120A
+        AL_5POINT1_16_SOFT                       0x120B
+        AL_5POINT1_32F_SOFT                      0x120C
+        AL_6POINT1_8_SOFT                        0x120D
+        AL_6POINT1_16_SOFT                       0x120E
+        AL_6POINT1_32F_SOFT                      0x120F
+        AL_7POINT1_8_SOFT                        0x1210
+        AL_7POINT1_16_SOFT                       0x1211
+        AL_7POINT1_32F_SOFT                      0x1212
+
+    Accepted by the <channels> parameter of alBufferSamplesSOFT,
+    alBufferSubSamplesSOFT, and alGetBufferSamplesSOFT:
+
+        AL_MONO_SOFT                             0x1500
+        AL_STEREO_SOFT                           0x1501
+        AL_QUAD_SOFT                             0x1502
+        AL_REAR_SOFT                             0x1503
+        AL_5POINT1_SOFT                          0x1504
+        AL_6POINT1_SOFT                          0x1505
+        AL_7POINT1_SOFT                          0x1506
+
+    Accepted by the <type> parameter of alBufferSamplesSOFT,
+    alBufferSubSamplesSOFT, and alGetBufferSamplesSOFT:
+
+        AL_BYTE_SOFT                             0x1400
+        AL_UNSIGNED_BYTE_SOFT                    0x1401
+        AL_SHORT_SOFT                            0x1402
+        AL_UNSIGNED_SHORT_SOFT                   0x1403
+        AL_INT_SOFT                              0x1404
+        AL_UNSIGNED_INT_SOFT                     0x1405
+        AL_FLOAT_SOFT                            0x1406
+        AL_DOUBLE_SOFT                           0x1407
+        AL_BYTE3_SOFT                            0x1408
+        AL_UNSIGNED_BYTE3_SOFT                   0x1409
+
+    Accepted by the <paramName> parameter of alGetBufferi and alGetBufferiv:
+
+        AL_INTERNAL_FORMAT_SOFT                  0x2008
+        AL_BYTE_LENGTH_SOFT                      0x2009
+        AL_SAMPLE_LENGTH_SOFT                    0x200A
+
+    Accepted by the <paramName> parameter of alGetBufferf and alGetBufferfv:
+
+        AL_SEC_LENGTH_SOFT                       0x200B
+
+    Accepted by the <paramName> parameter of alGetSourceiv and alGetSourcefv
+    (these are the same as in AL_SOFT_buffer_sub_data):
+
+        AL_BYTE_RW_OFFSETS_SOFT                  0x1031
+        AL_SAMPLE_RW_OFFSETS_SOFT                0x1032
+
+Additions to Specification
+
+    A New Way To Specify Buffer Data
+
+    To remove a buffer's sample data and replace it with new data, the
+    function
+
+    void alBufferSamplesSOFT(ALuint buffer, ALuint samplerate,
+                             ALenum internalformat, ALsizei samples,
+                             ALenum channels, ALenum type,
+                             const ALvoid *data);
+
+    should be used. The named <buffer> must be a buffer ID returned by
+    alGenBuffers, and not currently be attached to or queued on a source. The
+    given <samplerate> is the number of sample frames per second the data will
+    play at, and the <internalformat> is the storage format used (see Table
+    1.1). The number of uncompressed sample frames to load is specified by
+    <samples>.
+
+    The <channels> and <type> parameters specify the channel configuration and
+    sample type of the provided data (see Table 1.2 and 1.3). The samples will
+    be converted to the internal storage format as needed, however the channel
+    configuration must match the channel configuration of the storage format
+    or an AL_INVALID_ENUM error will be generated.
+
+    The <data> pointer should hold enough data as specified by the <channels>,
+    <type>, and <samples> parameters, and will be copied and converted into
+    the buffer's storage. It may also be NULL, in which case the stored data
+    will be undefined.
+
+    If AL_SOFT_loop_points is supported, a successful call will reset the
+    start and end loop points to 0 and <samples> respectively.
+
+    Table 1.1. Storage formats
+
+    Format                Configuration     Channels     Bit-size and type
+    ------------------    -------------     --------     -----------------
+    AL_MONO8_SOFT         Mono              1            8-bit int
+    AL_MONO16_SOFT        Mono              1            16-bit int
+    AL_MONO32F_SOFT       Mono              1            32-bit float
+    AL_STEREO8_SOFT       Stereo            2            8-bit int
+    AL_STEREO16_SOFT      Stereo            2            16-bit int
+    AL_STEREO32F_SOFT     Stereo            2            32-bit float
+    AL_QUAD8_SOFT         Quad              4            8-bit int
+    AL_QUAD16_SOFT        Quad              4            16-bit int
+    AL_QUAD32F_SOFT       Quad              4            32-bit float
+    AL_REAR8_SOFT         Rear              2            8-bit int
+    AL_REAR16_SOFT        Rear              2            16-bit int
+    AL_REAR32F_SOFT       Rear              2            32-bit float
+    AL_5POINT1_8_SOFT     5.1               6            8-bit int
+    AL_5POINT1_16_SOFT    5.1               6            16-bit int
+    AL_5POINT1_32F_SOFT   5.1               6            32-bit float
+    AL_6POINT1_8_SOFT     6.1               7            8-bit int
+    AL_6POINT1_16_SOFT    6.1               7            16-bit int
+    AL_6POINT1_32F_SOFT   6.1               7            32-bit float
+    AL_7POINT1_8_SOFT     7.1               8            8-bit int
+    AL_7POINT1_16_SOFT    7.1               8            16-bit int
+    AL_7POINT1_32F_SOFT   7.1               8            32-bit float
+
+    These specify the channel configuration and precision of the buffer's
+    internal storage. The details of these formats (eg, signedness of samples,
+    channel order, padding, and if the samples are interleaved or not) is left
+    to the implementation. Only AL_MONO8_SOFT, AL_STEREO8_SOFT,
+    AL_MONO16_SOFT, and AL_STEREO16_SOFT are guaranteed to be supported. The
+    remaining should be checked with a call to alIsBufferFormatSupportedSOFT
+    before use.
+
+    Table 1.2. Channel configurations
+
+    Channels          Configuration  Order 
+    ----------------  -------------  -----------------------------------------
+    AL_MONO_SOFT      Mono           mono
+    AL_STEREO_SOFT    Stereo         front-left, front-right
+    AL_QUAD_SOFT      Quad           front-left, front-right, rear-left,
+                                     rear-right
+    AL_REAR_SOFT      Rear           rear-left, rear-right
+    AL_5POINT1_SOFT   5.1            front-left, front-right, front-center,
+                                     lfe, rear-left, rear-right
+    AL_6POINT1_SOFT   6.1            front-left, front-right, front-center,
+                                     lfe, rear-center, side-left, side-right
+    AL_7POINT1_SOFT   7.1            front-left, front-right, front-center,
+                                     lfe, rear-left, rear-right, side-left,
+                                     side-right
+
+    Channel configurations that can be loaded into a buffer. As long as the
+    base configuration (Mono, Stereo, etc) matches the storage, the data can
+    be loaded. The sample data will be re-ordered and de-interleaved as needed
+    by the implementation.
+
+    Table 1.3. Sample types
+
+    Type                     Data type   Nominal value range
+    ----------------------   ---------   -------------------------
+    AL_BYTE_SOFT             ALbyte             -128...+127
+    AL_UNSIGNED_BYTE_SOFT    ALubyte               0...+255
+    AL_SHORT_SOFT            ALshort          -32768...+32767
+    AL_UNSIGNED_SHORT_SOFT   ALushort              0...+65535
+    AL_INT_SOFT              ALint       -2147483648...+2147483647
+    AL_UNSIGNED_INT_SOFT     ALuint                0...+4294967295
+    AL_FLOAT_SOFT            ALfloat            -1.0...+1.0
+    AL_DOUBLE_SOFT           ALdouble           -1.0...+1.0
+    AL_BYTE3_SOFT            ALbyte[3]      -8388608...+8388607
+    AL_UNSIGNED_BYTE3_SOFT   ALubyte[3]            0...+16777215
+
+    Data types and value ranges of loadable sample types. These values are
+    normalized, meaning the ALubyte range of 0...255 corresponds to the same
+    range as ALshort's -32768...+32767. ALfloat and ALdouble samples may
+    specify values outside of their nominal range, but will be clamped as
+    needed by the implementation (eg, when converting to a non-float type).
+    Values of +Infinity, -Infinity, and NaN will result in undefined behavior.
+
+    Note that for AL_BYTE3_SOFT and AL_UNSIGNED_BYTE3_SOFT, the value is a
+    packed 24-bit integer split into three bytes. The byte order is dependent
+    on the native byte order of the system. For AL_BYTE3_SOFT, only the most
+    significant bit of the most significant byte determines the signedness of
+    the value.
+
+
+    Table 2.0. Buffer Internal Format Attribute
+
+    Name                     Signature  Values          Default
+    -----------------------  ---------  --------------  -------
+    AL_INTERNAL_FORMAT_SOFT  i, iv      Any valid       AL_NONE
+                                        storage format
+
+    Query only. Queries the buffer's internal storage format, which is the
+    internalformat specified for the last successful alBufferSamplesSOFT call.
+    If a successful call to alBufferData is more recent, the value will be a
+    valid, implementation defined, storage format enum.
+
+    Table 2.1. Buffer Length Attributes
+
+    Name                   Signature  Values        Default
+    ---------------------  ---------  ------------  -------
+    AL_BYTE_LENGTH_SOFT    i, iv      [0, INT_MAX]  0
+    AL_SAMPLE_LENGTH_SOFT  i, iv      [0, INT_MAX]  0
+    AL_SEC_LENGTH_SOFT     f, fv      [0.0f, Any]   0.0f
+
+    Query only. Queries the length of the buffer, in bytes, sample frames, or
+    seconds. The sample length will be the same as the <samples> parameter to
+    the last successful alBufferSamplesSOFT call or, if a successful call to
+    alBufferData is more recent, based on the provided data length.
+
+    The length in seconds is the sample length divided by the buffer's sample
+    rate, and the byte length is the sample length multiplied by the storage
+    format's sample byte precision and channel count.
+
+    The lengths also represents the extents of a source offset when the buffer
+    is attached to a static source. That is, when the buffer is set on a
+    source using the source's AL_BUFFER attribute, the length is the end of
+    the corresponding source offset; eg, the source's AL_BYTE_OFFSET will
+    range from 0 (inclusive) to AL_BYTE_LENGTH_SOFT (exclusive).
+
+
+    To query if a storage format is supported by the implementation, use the
+    function
+
+    ALboolean alIsBufferFormatSupportedSOFT(ALenum format);
+
+    The function returns AL_FALSE if the given <format> is not a recognized
+    storage format. Otherwise, if it returns AL_TRUE it may be specified as
+    the <internalformat> for alBufferSamplesSOFT.
+
+
+    To update a buffer with new data, call
+
+    void alBufferSubSamplesSOFT(ALuint buffer, ALsizei offset,
+                                ALsizei samples, ALenum channels, ALenum type,
+                                const ALvoid *data);
+
+    <buffer> is the ID of the buffer to modify. <offset> is the first sample
+    frame in the internal storage to be modified, and <samples> is the number
+    of sample frames to modify. They must not extend beyond the existing
+    internal storage length. The <channels> and <type> parameters specify the
+    channel configuration and sample type of the provided data buffer,
+    specified by <data>, which will be copied and converted to the buffer's
+    storage format. As with alBufferSamplesSOFT, the channel configuration
+    must match the storage format's channel configuration or an
+    AL_INVALID_ENUM error will be generated.
+
+    When modifying a buffer that's playing on a source, an application must
+    take care to not modify the section that is currently being played. The
+    read-only source attributes
+
+      AL_BYTE_RW_OFFSETS_SOFT
+      AL_SAMPLE_RW_OFFSETS_SOFT
+
+    may be used to retrieve the read and write cursor offsets (see Table 3.0
+    and 3.1). Behavior is undefined if an attempt is made to modify buffer
+    data between the read and write offsets.
+
+    Table 3.0. Source AL_SAMPLE_RW_OFFSETS_SOFT Attribute
+
+    Name                       Signature  Values       Default
+    -------------------------  ---------  -----------  -------
+    AL_SAMPLE_RW_OFFSETS_SOFT  fv, iv     [0.0f, any]  N/A
+
+    Query only. Queries the current read and write cursor offsets, expressed
+    in samples (the values will loop back to 0 for looping sources). For a
+    compressed format, these values will represent an exact offset within the
+    uncompressed data.
+
+    The two offset values are relative to the beginning of all the queued
+    buffers for the source. The first value returned in the array is the
+    offset to the sample currently being read by the AL. The second value is
+    the offset an application may safely write to.
+
+    If the source is not in an AL_PLAYING state, the read and write offsets
+    will be the identical.
+
+    Table 3.1. Source AL_BYTE_RW_OFFSETS_SOFT Attribute
+
+    Name                     Signature  Values       Default
+    -----------------------  ---------  -----------  -------
+    AL_BYTE_RW_OFFSETS_SOFT  fv, iv     [0.0f, any]  N/A
+
+    Query only. Queries the current read and write cursor offsets, expressed
+    in bytes (the values will loop back to 0 for looping sources). For a
+    compressed format, these values may represent an approximate offset within
+    the compressed data buffer.
+
+    The two offset values are relative to the beginning of all the queued
+    buffers for the source. The first value returned in the array is the
+    offset to the data block currently being read by the AL. The second value
+    is the byte offset an application may safely write to.
+
+    If the source is not in an AL_PLAYING state, the read and write offsets
+    will be the identical.
+
+
+    To retrieve a buffer's sample data, use
+
+    void alGetBufferSamplesSOFT(ALuint buffer, ALsizei offset,
+                                ALsizei samples, ALenum channels, ALenum type,
+                                ALvoid *data);
+
+    This function will read the number of sample frames, given by <samples>,
+    starting at <offset>, and convert them to the channel configuration and
+    sample type specified by <channels> and <type>, before writing to the
+    provided <data> buffer pointer. An AL_INVALID_VALUE error is generated if
+    <offset> and <samples> reach beyond the range of the buffer. The channel
+    configuration must match the internal storage format's channel
+    configuration, or else an AL_INVALID_ENUM error will be generated.
+
+Errors
+
+    The error AL_INVALID_OPERATION is generated if alBufferSamplesSOFT is
+    called with a buffer that's attached or queued on a source.
+
+    The error AL_INVALID_ENUM is generated if the configuration specified by
+    <channels> does not match the buffer's storage format's channel
+    configuration.
+
+    The error AL_INVALID_VALUE is generated if alBufferSubSamplesSOFT or
+    alGetBufferSamplesSOFT is called with values for <offset> and <samples>
+    that specify a segment that is beyond the range of the buffer.

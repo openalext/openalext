@@ -1,0 +1,205 @@
+Name
+
+    AL_SOFT_source_latency
+
+Contributors
+
+    Chris Robinson
+    Jason Daly
+    Dee Sharpe
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+
+Overview
+
+    This extension provides a method for applications to more accurately
+    measure the playback latency of sources. Unextended OpenAL allows apps to
+    retrieve a source's playback offset in bytes, samples, or seconds, but
+    this is (typically) where the AL is processing the audio data.
+
+    Often, more processing is done outside of the AL. Audio servers are common
+    and they can introduce a bit of latency, increasing the time between when
+    the AL is done with a piece of audio data until it gets heard by the user.
+    If the OpenAL implementation uses its own mixer, that can also add to the
+    latency. This can ultimately cause a not-insignificant delay between where
+    the AL is processing and what is actually being heard.
+
+    Although this delay may not be very noticeable for general gaming, if the
+    app is trying to keep a video or animation syncronized with the playback
+    of an OpenAL source this extra delay can cause the audio and video to
+    appear of out sync.
+
+    Luckily, most audio systems have a way of measuring the latency it takes
+    for sound to actually get to the physical output device (the DAC or
+    speakers). By providing this information through the AL, an application
+    can more accurately tell what a user is hearing and thus synchronize
+    better with the audio output.
+
+Issues
+
+    Q: How should an application get the latency information from a source?
+    A: A few options were considered:
+
+       1) Simply forcing the source's playback offset back, based on the
+          amount of detected latency.
+       2) Adding a new read-only property that takes the source's playback
+          offset and adjusts it back, based on the amount of detected latency.
+       3) Adding a new read-only property that returns a precise measurement
+          of the playback offset along with the measured latency it'll take
+          for that offset to be heard.
+
+       Ultimately option 3 was decided, as it will have the least impact on
+       compatibility and little difficulty with handling "special" cases (such
+       as looping, when the offset was recently changed, or where it would go
+       negative).
+
+    Q: What unit of measurement should this information be provided as?
+    A: 32.32 fixed-point sample offsets+nanoseconds, and seconds. This
+       necessitates functions to retrieve 64-bit integer and double-precision
+       floating point values from a source.
+
+    Q: Why fixed-point sample offsets, and why 32 bits of precision?
+    A: OpenAL knows more precisely where a sample offset is when it has to
+       resample, and this extra precision can be useful for applications that
+       want precise timing information. In actuality, 16 bits of precision
+       would be more than enough, however 32 bits neatly packs the value to
+       put the whole number offset in the upper 32 bits. Such a configuration
+       can make it easier for a 32-bit applications to deal with.
+
+New Primitive Types
+
+       AL Type       Description                           GL Type
+       ============  ====================================  ========
+       ALint64SOFT   Signed 64-bit 2's-compliment integer  GLint64
+       ------------  ------------------------------------  --------
+       ALuint64SOFT  Unsigned 64-bit integer               GLuint64
+
+New Procedures and Functions
+
+       void alSourcedSOFT(ALuint source, ALenum param, ALdouble value);
+
+       void alSource3dSOFT(ALuint source, ALenum param, ALdouble value1,
+                           ALdouble value2, ALdouble value3);
+
+       void alSourcedvSOFT(ALuint source, ALenum param,
+                           const ALdouble *values);
+
+       void alGetSourcedSOFT(ALuint source, ALenum param, ALdouble *value);
+
+       void alGetSource3dSOFT(ALuint source, ALenum param, ALdouble *value1,
+                              ALdouble *value2, ALdouble *value3);
+
+       void alGetSourcedvSOFT(ALuint source, ALenum param, ALdouble *values);
+
+       void alSourcei64SOFT(ALuint source, ALenum param, ALint64SOFT value);
+
+       void alSource3i64SOFT(ALuint source, ALenum param, ALint64SOFT value1,
+                             ALint64SOFT value2, ALint64SOFT value3);
+
+       void alSourcei64vSOFT(ALuint source, ALenum param,
+                             const ALint64SOFT *values);
+
+       void alGetSourcei64SOFT(ALuint source, ALenum param,
+                               ALint64SOFT *value);
+
+       void alGetSource3i64SOFT(ALuint source, ALenum param,
+                                ALint64SOFT *value1, ALint64SOFT *value2,
+                                ALint64SOFT *value3);
+
+       void alGetSourcei64vSOFT(ALuint source, ALenum param,
+                                ALint64SOFT *values);
+
+New Tokens
+
+        AL_SAMPLE_OFFSET_LATENCY_SOFT             0x1200
+        AL_SEC_OFFSET_LATENCY_SOFT                0x1201
+
+Additions to Specification
+
+    New 64-bit Integer and Double-Precision Floating Point Functions:
+
+    In addition to the standard 32-bit integer (i) and single-precision
+    floating point (f) types, source attributes may be changed or queried
+    using 64-bit integer (i64) and double-precision floating point (d) types.
+
+    Any valid attribute for 32-bit integers will be valid for 64-bit integers,
+    and any attribute for single-precision floating point will be valid for
+    double-precision floating point. Note that the reverse is not necessarily
+    true. Specific 64-bit integer attributes may not work through the 32-bit
+    integer functions, and specific double-precision floating point attributes
+    may not work with the single-precision floating point functions, unless
+    otherwise specified.
+
+    Also note that range restrictions still apply, so for example, attributes
+    that only allow up to INT_MAX will still only allow up to INT_MAX even
+    when set through 64-bit integer functions.
+
+
+    New Source Attributes:
+
+    Two new attributes are added to sources, which can be used to retrieve a
+    high-precision source offset and playback latency.
+
+    Source AL_SAMPLE_OFFSET_LATENCY_SOFT Attribute
+
+    Name                           Signature  Values                Default
+    -----------------------------  ---------  --------------------  -------
+    AL_SAMPLE_OFFSET_LATENCY_SOFT  i64v       {[0, Any], [0, Any]}  N/A
+
+    Description: the playback position, expressed in fixed-point samples,
+    along with the playback latency, expressed in nanoseconds (1/1000000000ths
+    of a second). This attribute is read-only.
+
+    The first value in the returned vector is the sample offset, which is a
+    32.32 fixed-point value. The whole number is stored in the upper 32 bits
+    and the fractional component is in the lower 32 bits. The value is similar
+    to that returned by AL_SAMPLE_OFFSET, just with more precision.
+
+    The second value is the latency, in nanoseconds. It represents the length
+    of time it will take for the audio at the current offset to actually reach
+    the speakers or DAC. This value should be considered volatile, as it may
+    change very often during playback (it can depend on a number of factors,
+    including how full the mixing buffer OpenAL may be using is timer jitter,
+    or other changes deeper in the audio pipeline).
+
+    The retrieved offset and latency should be considered atomic, with respect
+    to one another. This means the returned latency was measured exactly when
+    the source was at the returned offset.
+
+    Source AL_SEC_OFFSET_LATENCY_SOFT Attribute
+
+    Name                        Signature  Values                    Default
+    --------------------------  ---------  ------------------------  -------
+    AL_SEC_OFFSET_LATENCY_SOFT  dv         {[0.0, Any], [0.0, Any]}  N/A
+
+    Description: the playback position, along with the playback latency, both
+    expressed in seconds. This attribute is read-only.
+
+    The first value in the returned vector is the offset in seconds. The value
+    is similar to that returned by AL_SEC_OFFSET, just with more precision.
+
+    The second value is the latency, in seconds. It represents the length of
+    time it will take for the audio at the current offset to actually reach
+    the speakers or DAC. This value should be considered volatile, as it may
+    change very often during playback (it can depend on a number of factors,
+    including how full the mixing buffer OpenAL may be using is, timer jitter,
+    or other changes deeper in the audio pipeline).
+
+    The retrieved offset and latency should be considered atomic with respect
+    to one another. This means the returned latency was measured exactly when
+    the source was at the returned offset.
+
+Errors
+
+    An AL_INVALID_OPERATION error is generated when trying to set the
+    AL_SAMPLE_OFFSET_LATENCY_SOFT or AL_SEC_OFFSET_LATENCY_SOFT attributes.

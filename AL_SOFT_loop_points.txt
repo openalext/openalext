@@ -1,0 +1,116 @@
+Name
+
+    AL_SOFT_loop_points
+
+Contributors
+
+    Chris Robinson
+    Daniel Peacock
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows an application to specify the offsets at which a
+    buffer loops. Unextended OpenAL only allows for a source to loop a whole
+    buffer, or all buffers of a queue, which is not desirable for sounds that
+    may want a lead-in or lead-out along with the looping portion.
+
+Issues
+
+    Q: How are are the loop points specified?
+    A: Loop points are specified as a buffer attribute, using uncompressed
+       sample offsets. The sample offsets are in relation to the sample rate
+       provided to alBufferData, similar to the source's AL_SAMPLE_OFFSET
+       attribute.
+
+    Q: Why sample offsets and not compressed byte offsets?
+    A: Sample offsets allow more precision when dealing with compressed
+       formats, like IMA4 which can have multiple samples per byte.
+
+    Q: Can the loop points be modified while the source is playing or paused?
+    A: No. The buffer object is typically unmodifiable once it's attached to a
+       source, and there is no apparent need to.
+
+    Q: How does this interact with buffer queues?
+    A: The loop points are ignored when the buffer is set on a source using
+       alSourceQueueBuffers (ie. a source that is not an AL_STATIC type).
+
+    Q: What should happen if the loop start offset is greater than or equal to
+       the loop end offset?
+    A: An AL_INVALID_VALUE error is generated. There is no reason for such
+       offsets to be specified.
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <paramName> parameter of alBufferiv and alGetBufferiv:
+
+        AL_LOOP_POINTS_SOFT                      0x2015
+
+Additions to Specification
+
+    Append to Section 5.3.1, Buffer Attributes
+
+    Table 5.x. Buffer AL_LOOP_POINTS_SOFT Attribute
+
+    Name                   Signature  Values          Default
+    ---------------------  ---------  --------------  --------
+    AL_LOOP_POINTS_SOFT    iv         [0, MAX_INT]    {0, 0}
+
+    Specifies the two offsets the playing source will use to loop, expressed
+    in uncompressed samples. This only has an affect when the source it's
+    attached to is of an AL_STATIC type and its AL_LOOPING attribute is set to
+    AL_TRUE. The first value specifies the offset the source will loop to when
+    it reaches the offset specified by the second value.
+
+    If the source's current position within the buffer is not between the two
+    offsets, it will not be moved. If the source then reaches the end of the
+    buffer data, it will progress to an AL_STOPPED state.
+
+    The offsets must be less than or equal to the number of samples in the
+    buffer, and the second offset must be greater than the first offset, or an
+    AL_INVALID_VALUE error is generated. An attempt to change the values while
+    the buffer is attached or queued to a source will generate an
+    AL_INVALID_OPERATION error.
+
+
+    Modify Section 5.3.4, Specifying Buffer Content
+
+    "... An invalid size will result in an AL_INVALID_VALUE error.
+
+    When successfully filled with new data, the buffer's AL_LOOP_POINTS_SOFT
+    attribute will be set to 0 and the buffer's sample count, for the first
+    and second offset respectively.
+
+    Applications should always check for an error condition..."
+
+Errors
+
+    An AL_INVALID_VALUE error is generated if alBufferiv is called with a
+    negative offset value for AL_LOOP_POINTS_SOFT.
+
+    An AL_INVALID_VALUE error is generated if alBufferiv is called with offset
+    values for AL_LOOP_POINTS_SOFT where the second value is not greater than
+    the first value.
+
+    An AL_INVALID_VALUE error is generated if alBufferiv is called with an
+    offset value for AL_LOOP_POINTS_SOFT that is greater than the buffer's
+    sample count.
+
+    An AL_INVALID_OPERATION error is generated if an attempt is made to modify
+    the AL_LOOP_POINTS_SOFT attribute while the buffer is attached or queued
+    to a source.

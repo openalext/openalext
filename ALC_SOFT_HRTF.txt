@@ -1,0 +1,253 @@
+Name
+
+    ALC_SOFT_HRTF
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+
+Overview
+
+    This extension allows an application to request and determine the status
+    of HRTF mixing. HRTF, or Head-Related Transfer Function, is a method of
+    mixing 3D audio for "true" 3D panning, typically using filters designed to
+    simulate how sound is affected by a listener's head as the sound waves
+    travel between the ears.
+
+    As a 3D sound API, OpenAL's design allows implementations to transparently
+    render audio using HRTF. However, the OpenAL API currently has no concept
+    of HRTF so there's no way to query if it's being used, and no way for an
+    application to request it on behalf of the user. This aims to fix that.
+
+Issues
+
+    Q: Implementations can already use HRTF, so why is an extension needed?
+    A: Although implementations can use HRTF, there is no way for the app to
+       know if it's being used. At the very least, an app may want to alert
+       the user to whether HRTF is in use or not, and why it's being used or
+       not.
+
+       Additionally, a user may not know how to enable HRTF through a given
+       implementation's configuration, and it is not always possible for an
+       implementation to detect when HRTF should be used.
+
+       It should be noted that the request is only a hint, so if an
+       implementation needs to ignore the request for whatever reason, it can,
+       and still provide feedback to the app about why.
+
+    Q: It is not unlikely for an implementation to be able to provide multiple
+       different HRTFs for different purposes (head measurements, quality,
+       etc). How is this handled?
+    A: An enumeration API is introduced. Applications that don't care about
+       specific HRTFs don't need to use it and can let OpenAL pick a default.
+
+    Q: What is the purpose of alcResetDeviceSOFT?
+    A: An app will most likely want to enable and disable HRTF at runtime (for
+       example, in response to in-game option changes). The normal way of
+       enabling HRTF would be with the attribute list to alcCreateContext,
+       however this is clunky if audio playback is already started; the app
+       would either need to destroy the current context and create a new one
+       with the new parameters, or create a context just for the side-effect
+       of changing the device properties and then not use it for anything.
+
+       A method just to reset the device properties seems the most elegant
+       solution, as it would not interrupt existing contexts and it would not
+       rely on side-effects of function behaviors which may not be reliable.
+
+New Procedures and Functions
+
+    const ALCchar *alcGetStringiSOFT(ALCdevice *device, ALCenum paramName,
+                                     ALCsizei index);
+
+    ALCboolean alcResetDeviceSOFT(ALCdevice *device, const ALCint *attrList);
+
+New Tokens
+
+    Accepted as part of the <attrList> parameter of alcCreateContext and
+    alcDeviceResetSOFT, and as the <paramName> parameter of alcGetIntegerv:
+
+        ALC_HRTF_SOFT                            0x1992
+
+    Accepted as part of the <attrList> parameter of alcCreateContext and
+    alcDeviceResetSOFT:
+
+        ALC_HRTF_ID_SOFT                         0x1996
+
+    Accepted as part of the <attrList> parameter of alcCreateContext and
+    alcDeviceResetSOFT, for the ALC_HRTF_SOFT attribute:
+
+        ALC_DONT_CARE_SOFT                       0x0002
+
+    Accepted as the <paramName> parameter of alcGetIntegerv:
+
+        ALC_HRTF_STATUS_SOFT                     0x1993
+        ALC_NUM_HRTF_SPECIFIERS_SOFT             0x1994
+
+    Accepted as the <paramName> parameter of alcGetString and
+    alcGetStringiSOFT:
+
+        ALC_HRTF_SPECIFIER_SOFT                  0x1995
+
+    Possible results from a ALC_HRTF_STATUS_SOFT query:
+
+        ALC_HRTF_DISABLED_SOFT                   0x0000
+        ALC_HRTF_ENABLED_SOFT                    0x0001
+        ALC_HRTF_DENIED_SOFT                     0x0002
+        ALC_HRTF_REQUIRED_SOFT                   0x0003
+        ALC_HRTF_HEADPHONES_DETECTED_SOFT        0x0004
+        ALC_HRTF_UNSUPPORTED_FORMAT_SOFT         0x0005
+
+
+Additions to Specification
+
+    Resetting a device
+
+    After a device is opened for playback, an application may reset it to
+    attempt changing the playback properties. To reset the device, use the
+    function
+
+    ALCboolean alcResetDeviceSOFT(ALCdevice *device, const ALCint *attrList);
+
+    The device parameter is a handle to a valid playback device as returned by
+    alcOpenDevice, otherwise the call fails and an ALC_INVALID_DEVICE error is
+    generated. The attrList is the same as what could be passed to
+    alcCreateContext. The AL is allowed to ignore attributes and attribute
+    value combinations the device cannot support, for example if the device
+    doesn't support the requested ALC_FREQUENCY value, another value it does
+    support may be set.
+
+    On success the function returns ALC_TRUE, and on failure the function
+    returns ALC_FALSE. Note that a return of ALC_TRUE does not indicate any
+    attributes were honored, just that the device was successfully reset. If
+    you need to know what the attributes are after a reset, query the device
+    using alcGetIntegerv with the relevant attributes.
+
+
+    HRTF mixing
+
+    An application may request mixing using a Head-Related Transfer Function,
+    or HRTF. HRTF can provide better spatial acuity when using headphones by
+    using special filters designed to replicate how sounds are affected by the
+    shape of the listener's head as they come in from a given direction. To
+    request HRTF, specify the ALC_HRTF_SOFT attribute to alcCreateContext or
+    alcResetDeviceSOFT with the value ALC_TRUE.
+
+    ALCint attrs[] = {
+        ALC_HRTF_SOFT, ALC_TRUE, /* request HRTF */
+        0 /* end of list */
+    };
+    context = alcCreateContext(device, attrs);
+
+    Specifying the value ALC_FALSE will request no HRTF mixing. The default
+    value of ALC_DONT_CARE_SOFT will allow the AL to determine for itself
+    whether HRTF should be used or not, depending on the detected device port
+    or form factor, format, etc.
+
+    Requesting HRTF mixing may cause the AL to reconfigure the device for a
+    specific output mode and restrict the usable frequency values.
+
+    A word of warning: although HRTF can sound great with headphones, it may
+    result in increased resource usage and it may not sound very good with
+    ordinary speakers, particularly if the user has surround sound output.
+    Consequently, it is not a good idea to unconditionally request HRTF
+    mixing. A good rule of thumb is to not specify an ALC_HRTF_SOFT attribute
+    by default (or instead use the ALC_DONT_CARE_SOFT value), letting the AL
+    autoselect it as appropriate, unless the user indicates otherwise.
+
+
+    HRTF enumeration and selection
+
+    Each AL device has a list of HRTFs it has access to. Applications may
+    query this list by first querying the ALC_NUM_HRTF_SPECIFIERS_SOFT
+    property using the alcGetIntegerv function with a given device.
+
+    ALCint hrtf_count;
+    alcGetIntegerv(device, ALC_NUM_HRTF_SPECIFIER_SOFT, 1, &hrtf_count);
+
+    This query acts as an enumeration point, allowing the device to refresh
+    the list of HRTFs it may use.
+
+    To get a human-readable string for each HRTF, use the function
+
+    const ALCchar *alcGetStringiSOFT(ALCdevice *device, ALCenum paramName,
+                                     ALCsizei index);
+
+    The device handle must be the same one that previously queried the number
+    of HRTF specifiers, have <paramName> set to ALC_HRTF_SPECIFIER_SOFT, and
+    specify an index between 0 (inclusive) and the previously-queried HRTF
+    count (exclusive). The returned string will be an implementation-defined
+    UTF-8 encoded specifier for the given HRTF index, designed for display to
+    the user. The returned strings are valid until the next enumeration point
+    or the device is closed.
+
+    Selecting an HRTF is done by specifying the ALC_HRTF_ID_SOFT attribute to
+    alcCreateContext or alcResetDeviceSOFT with the index of the desired HRTF.
+
+    ALCint attrs[] = {
+        ALC_HRTF_SOFT, ALC_TRUE, /* request HRTF */
+        ALC_HRTF_ID_SOFT, index,
+        0 /* end of list */
+    };
+    context = alcCreateContext(device, attrs);
+
+    If the specified HRTF cannot be used, the AL will try to select another
+    instead. Please note: the ALC_HRTF_ID_SOFT attribute is separate from the
+    ALC_HRTF_SOFT attribute. ALC_HRTF_ID_SOFT merely suggests which HRTF to
+    use if it's used, while ALC_HRTF_SOFT specifies how OpenAL should decide
+    to use HRTF.
+
+    To query which HRTF is being used, call alcGetString with the
+    ALC_HRTF_SPECIFIER_SOFT parameter on the device. Rather than querying the
+    ID value, which can change in between enumerations, the application
+    instead queries the string specifier which remains constant for the
+    device. The returned string remains valid until the device is reset,
+    closed, or has a new context created on it.
+
+
+    HRTF status query
+
+    An easy way to query HRTF status is to simply call alcGetIntegerv with the
+    ALC_HRTF_SOFT attribute. This will respond with ALC_TRUE if HRTF is in use
+    on the device, or ALC_FALSE if not (note that it will not give back
+    ALC_DONT_CARE_SOFT even if that was specified during context creation or
+    device reset).
+
+    More detailed status info can be obtained by calling alcGetIntegerv with
+    the ALC_HRTF_STATUS_SOFT parameter. This may respond with one of the
+    following values:
+
+    ALC_HRTF_DISABLED_SOFT - HRTF is disabled (generic response).
+    ALC_HRTF_ENABLED_SOFT - HRTF is enabled (generic response).
+    ALC_HRTF_DENIED_SOFT - HRTF is disabled because it's not allowed on the
+                           device. This may be caused by invalid resource
+                           permissions, or other user configuration that
+                           disallows HRTF.
+    ALC_HRTF_REQUIRED_SOFT - HRTF is enabled because it must be used on the
+                             device. This may be caused by a device that can
+                             only use HRTF, or other user configuration that
+                             forces HRTF to be used.
+    ALC_HRTF_HEADPHONES_DETECTED_SOFT - HRTF is enabled automatically because
+                                        the device reported itself as
+                                        headphones.
+    ALC_HRTF_UNSUPPORTED_FORMAT_SOFT - HRTF is disabled because the device
+                                       does not support it with the current
+                                       format. Typically this is caused by
+                                       non-stereo output or an incompatible
+                                       output frequency.
+
+    This is not an exhaustive list; future extensions may add more status
+    values, so an application must be prepared to handled unknown values.
+
+Errors

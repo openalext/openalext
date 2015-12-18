@@ -1,0 +1,132 @@
+Name
+
+    AL_SOFT_MSADPCM
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+    This extension interacts with AL_SOFT_block_alignment.
+
+Overview
+
+    This extension adds support for MSADPCM compressed sample formats.
+
+Issues
+
+    None.
+
+New Procedures and Functions
+
+    None.
+
+New Tokens
+
+    Accepted by the <format> parameter of alBufferData:
+
+        AL_FORMAT_MONO_MSADPCM_SOFT              0x1302
+        AL_FORMAT_STEREO_MSADPCM_SOFT            0x1303
+
+Additions to Specification
+
+    MSADPCM Sample Formats
+
+    MSADPCM data, like IMA4, is expressed as one or more blocks of data. By
+    default a block length of 64 sample frames (or 38 bytes per channel) is
+    used, however this can be changed using the AL_SOFT_block_alignment
+    extension. Each block starts with a header that provides initial
+    information for the decoding process, which is then used in conjunction
+    with the following nibbles (4 bits) to generate samples.
+
+    The header for a mono MSADPCM block is 7 bytes, and can be described as:
+
+    predictor  : uint8
+    delta      : int16 (little-endian)
+    history0   : int16 (little-endian)
+    history1   : int16 (little-endian)
+
+    The predictor is in the range of [0...6], and should be clamped as needed.
+    The value is used as an index into two lookup tables that are used in the
+    decoding process. The two tables are defined as:
+
+    const int coeff0[7] = { 256,  512, 0, 192, 240,  460,  392  };
+    const int coeff1[7] = {   0, -256, 0,  64,   0, -208, -232  };
+
+    An adaption table is also used, to modify the delta after decoding a
+    sample. It is defined as:
+
+    const int adapt[16] = { 230, 230, 230, 230, 307, 409, 512, 614,
+                            768, 614, 512, 409, 307, 230, 230, 230 };
+
+    The history values represent the last two decoded samples, with history0
+    being the newest and history1 the oldest. Additionally, they are the first
+    two output values, as signed 16-bit samples, with history1 being the first
+    and history0 being the second.
+
+    The remaining bytes of each block are each composed of two nibbles, with
+    each nibble being used to generate one sample. The top nibble of a byte is
+    used first to decode a sample, followed by the bottom for the next.
+    Decoding each nibble into a signed 16-bit sample is done like:
+
+    /* Use a 32-bit temporary in case it overflows the 16-bit range. */
+    int sample;
+
+    /* Form an initial prediction using the history and coefficients. */
+    sample  = (history0*coeff0[predictor] + history1*coeff1[predictor]) / 256;
+
+    /* Add a correction using a sign-extended nibble scaled by the delta. */
+    sample += ((nibble >= 8) ? nibble-16 : nibble) * delta;
+
+    /* Clamp the result to a valid 16-bit range. */
+    if(sample > 32767)
+        sample = 32767;
+    if(sample < -32768)
+        sample = -32768;
+
+    /* Update the history with the new sample. */
+    history1 = history0;
+    history0 = sample;
+
+    /* Update the delta for the next sample. */
+    delta = adapt[nibble] * delta / 256;
+
+    /* Make sure the delta is no less than 16. */
+    if(delta < 16)
+        delta = 16;
+
+    The decoded 16-bit value is now stored in 'sample'.
+
+    For a stereo MSADPCM block, each header is 14 bytes, and each field is
+    interleaved with the left channel followed by the right:
+
+    left-predictor   : uint8
+    right-predictor  : uint8
+    left-delta       : int16 (little-endian)
+    right-delta      : int16 (little-endian)
+    left-history0    : int16 (little-endian)
+    right-history0   : int16 (little-endian)
+    left-history1    : int16 (little-endian)
+    right-history1   : int16 (little-endian)
+
+    The remaining bytes are interleaved on a per-nibble basis. Effectively,
+    the top nibble of each byte is used for the left channel, and the bottom
+    nibble is used for the right channel. The channel header fields are used
+    independently for decoding -- that is, the left channel does not at all
+    influence the samples produced for the right channel, and vice-versa.
+
+Errors
+
+    An AL_INVALID_VALUE error is generated if alBufferData is called with a
+    format of AL_FORMAT_MONO_MSADPCM_SOFT or AL_FORMAT_STEREO_MSADPCM_SOFT and
+    the data size is not a valid multiple of the block alignment in bytes.
