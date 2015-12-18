@@ -1,0 +1,5 @@
+9.2. AL_EXT_OFFSET
+An OpenAL 1.1 implementation will always support the AL_EXT_OFFSET extension. This allows an application written to the OpenAL 1.0 specification to access the offset abilities expressed in section 4.3.2.
+
+Offset tokens:
+AL_SEC_OFFSET AL_SAMPLE_OFFSET AL_BYTE_OFFSET

@@ -1,0 +1,5 @@
+9.4. AL_EXT_EXPONENT_DISTANCE
+An OpenAL 1.1 implementation will always support the AL_EXT_EXPONENT_DISTANCE extension. This allows an application written to the OpenAL 1.0 specification to access the offset abilities expressed in sections 3.4.5 and 3.4.6.
+
+Tokens:
+AL_EXPONENT_DIST ANCE AL_EXPONENT_DISTANCE_CLAMPED

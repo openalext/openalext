@@ -1,0 +1,12 @@
+9.1. ALC_EXT_CAPTURE
+An OpenAL 1.1 implementation will always support the ALC_EXT_CAPTURE extension. This allows an application written to the OpenAL 1.0 specification to access the capture abilities expressed in section 6.4.2.
+
+Capture Procedures and Functions
+ALCdevice* alcCaptureOpenDevice(const ALCchar *deviceName, ALCuint freq, ALCenum fmt, ALCsizei bufsize);
+ALCboolean alcCaptureCloseDevice(ALCdevice *device);
+void alcCaptureStart(ALCdevice *device);
+void alcCaptureStop(ALCdevice *device);
+void alcCaptureSamples(ALCdevice *device, ALCvoid *buf, ALCsizei samps);
+
+Capture Tokens
+ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER ALC_CAPTURE_DEVICE_SPECIFIER ALC_CAPTURE_SAMPLES

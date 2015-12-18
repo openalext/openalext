@@ -1,0 +1,2 @@
+9.5. ALC_ENUMERATION_EXT
+An OpenAL 1.1 implementation will always support the ALC_ENUMERATION_EXT extension. This extension provides for enumeration of the available OpenAL devices through alcGetString. An alcGetString query of ALC_DEVICE_SPECIFIER with a NULL device passed in will return a list of devices. Each device name will be separated by a single NULL character and the list will be terminated with two NULL characters.
