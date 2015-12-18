@@ -1,0 +1,19 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ AL_EXT_SOURCE_SPATIALIZATION
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+/*
+ Allows the rendering quality to be explicitly set on a source object, overriding the default
+ render quality set via alcMacOSXRenderingQuality(). A subsequent call to alcMacOSXRenderingQuality()
+ resets the render quality of all source objects.
+ 
+ Uses the same render settings (defined above) as alcMacOSXRenderingQuality():
+ 
+ ALC_MAC_OSX_SPATIAL_RENDERING_QUALITY_HIGH
+ ALC_MAC_OSX_SPATIAL_RENDERING_QUALITY_LOW
+ ALC_IPHONE_SPATIAL_RENDERING_QUALITY_HEADPHONES
+ 
+ Retrieve functions via alcGetProcAddress() by passing in strings: alSourceRenderingQuality or alSourceGetRenderingQuality
+ */
+
+typedef ALvoid (*alSourceRenderingQualityProcPtr) (ALuint sid, ALint value);
+typedef ALint (*alSourceGetRenderingQualityProcPtr) (ALuint sid);

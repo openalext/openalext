@@ -8,3 +8,54 @@ The available notification types are
   AL_SOURCE_STATE   - there is a change in the source's state
   AL_BUFFERS_PROCESSED  - there is a change in the number of buffers processed
   AL_QUEUE_HAS_LOOPED   - the buffer queue has looped (if looping is enabled)
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  AL_EXT_SOURCE_NOTIFICATIONS
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+/*
+  Source Notifications
+
+  Eliminates the need for continuous polling for source state by providing a
+  mechanism for the application to receive source state change notifications.
+  Upon receiving a notification, the application can retrieve the actual state
+  corresponding to the notification ID for which the notification was sent.
+*/
+
+#define AL_QUEUE_HAS_LOOPED           0x9000
+
+/*
+  Notification Proc:  ALSourceNotificationProc
+ 
+    sid   - source id
+    notificationID  - id of state that has changed
+    userData  - user data provided to alSourceAddNotification()
+*/
+  
+typedef ALvoid (*alSourceNotificationProc)(ALuint sid, ALuint notificationID, ALvoid* __nullable userData);
+
+/*
+  API: alSourceAddNotification
+
+    sid   - source id
+    notificationID  - id of state for which caller wants to be notified of a change           
+    notifyProc  - notification proc
+    userData  - ptr to applications user data, will be returned in the notification proc
+
+    Returns AL_NO_ERROR if request is successful.
+
+    Valid IDs:
+      AL_SOURCE_STATE
+      AL_BUFFERS_PROCESSED
+      AL_QUEUE_HAS_LOOPED - notification sent when a looping source has looped to it's start point
+*/
+typedef ALenum (*alSourceAddNotificationProcPtr) (ALuint sid, ALuint notificationID, alSourceNotificationProc __nonnull notifyProc, ALvoid* __nullable userData);
+
+/*
+  API: alSourceRemoveStateNotification
+
+    sid   - source id
+    notificationID  - id of state for which caller wants to remove an existing notification           
+    notifyProc  - notification proc
+    userData  - ptr to applications user data, will be returned in the notification proc
+*/
+typedef ALvoid (*alSourceRemoveNotificationProcPtr) (ALuint sid, ALuint notificationID, alSourceNotificationProc __nonnull notifyProc, ALvoid* __nullable userData);

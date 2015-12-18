@@ -1,3 +1,33 @@
 **** ALC_EXT_ASA_ROGER_BEEP
 This extension allows use of the Roger Beep effect to simulate effects such as Walkie Talkie noise. Effect is activated when
 the source audio data falls below a specified db threshold for a specified time.
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ALC_EXT_ASA_ROGER_BEEP : Apple Spatial Audio Extension for Roger Beep Effect
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+  
+/*  
+  Roger Beep : an effect to simulate effects such as Walkie Talkie noise. It is designed to replace the 
+  source audio data with a specific 'tone' when falling below a specified db threshold for a specified time.
+  This Extension will be present when the Roger Beep Audio Unit is present on the system (10.5 or greater)
+  Use the alcASAGetSource() and alcASASetSource() APIs in the ALC_EXT_ASA extension.
+*/
+
+  /* source properties */
+  #define ALC_ASA_ROGER_BEEP_ENABLE       'rben'  // type ALboolean - initializes Roger Beep for use - returns error if source is not in a Stopped or Initial state
+  #define ALC_ASA_ROGER_BEEP_ON         'rbon'  // type ALboolean - set effect on/off (bypass) - default setting is true (on)
+  #define ALC_ASA_ROGER_BEEP_GAIN         'rbgn'  // type ALfloat   - 20.0 (db) apply maximum effect :  -80.0(db) apply minimum effect amount
+  #define ALC_ASA_ROGER_BEEP_SENSITIVITY      'rbsn'  // type ALint   - specifiy a predefined sensitivity setting
+  #define ALC_ASA_ROGER_BEEP_TYPE         'rbtp'  // type ALint   - choose predefined specific Roger Beep tone
+  #define ALC_ASA_ROGER_BEEP_PRESET       'rbps'  // type ALchar*   - path to an au preset file (set only) 
+
+  /* settings for the ALC_ASA_ROGER_BEEP_TYPE property */
+  #define ALC_ASA_ROGER_BEEP_TYPE_quindartone     0
+  #define ALC_ASA_ROGER_BEEP_TYPE_whitenoise      1
+  #define ALC_ASA_ROGER_BEEP_TYPE_walkietalkie    2
+
+  /* settings for the ALC_ASA_ROGER_BEEP_SENSITIVITY property */ 
+
+  #define ALC_ASA_ROGER_BEEP_SENSITIVITY_Light    0
+  #define ALC_ASA_ROGER_BEEP_SENSITIVITY_Medium   1
+  #define ALC_ASA_ROGER_BEEP_SENSITIVITY_Heavy    2
