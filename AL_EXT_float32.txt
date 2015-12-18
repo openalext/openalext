@@ -1,2 +1,43 @@
-**** AL_EXT_float32
-The AL_EXT_float32 extension provides support for 32-bit float audio data (mono/stereo).
+Name
+        EXT_float32
+
+Name Strings
+        AL_EXT_float32
+
+Version
+        1.0
+
+Number
+        ??
+
+Dependencies
+        None
+
+Overview
+        This extension provides format support for uncompressed
+        PCM data in 32-bit float IEEE format. Use of audio data in
+        this format may be more efficient for the implementation
+        to process. An implementation that exposes this extension
+        will accept two new data formats in alBufferData().
+
+Issues
+        None.
+
+New Procedures and Functions
+        None.
+
+New Tokens
+        AL_FORMAT_MONO_FLOAT32                      0x10010
+        AL_FORMAT_STEREO_FLOAT32                    0x10011
+
+Additions to Specification
+        None
+
+Errors
+        None
+
+New State
+        None
+
+New Implementation State
+        None
