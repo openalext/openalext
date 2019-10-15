@@ -1,0 +1,113 @@
+Name
+
+    AL_SOFT_gain_clamp_ex
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+
+Overview
+
+    This extension extends the gain clamping mechanism in standard AL. By
+    default, OpenAL allows the source's and listener's AL_GAIN property to be
+    set to any value that's greater-than or equal-to 0. The calculated source
+    gain is clamped between its AL_MIN_GAIN and AL_MAX_GAIN properties after
+    distance attenuation and the directional cone is applied, and before the
+    listener gain is applied, however these two clamping properties are
+    themselves restricted to being between 0 and 1 (inclusive).
+
+    That behavior effectively nullifies any purpose of setting a source's gain
+    being above 1, as the source's distance- and cone-related properties can
+    be modified for the same effect. Oddly, the listener gain is applied to
+    the source gain *after* the clamping, so it is still possible for the
+    final calculated gain to exceed 1. On top of this, the spec allows an
+    implementation the option to implicitly clamp the final calculated gain
+    for the source as needed, but provides no means for applications to detect
+    such behavior.
+
+    This extension aims to fix those problems by removing the maximum limit
+    for AL_MIN_GAIN and AL_MAX_GAIN, allowing applications to increase the
+    effective source gain above 1. Additionally, it provides a query for the
+    application to retrieve the implicit clamp level an implementation may put
+    on the final calculated gain.
+
+Issues
+
+    Q: Why allow a source's gain to go above 1?
+    A: Sometimes sounds are not authored to take full advantage of the dynamic
+       range offered by the sample format, thus necessitating an increase for
+       it to reach the true maximum volume allowed by the device. Other times,
+       there may be additional attenuation applied after the source is mixed,
+       and a user may want to increase certain sounds to be louder than would
+       otherwise be allowed with a maximum of 1.
+
+       However, care should be taken when using the non-clamped distance
+       models. If a source has an increased AL_MAX_GAIN property and moves
+       closer than the specified AL_REFERENCE_DISTANCE, the distance-related
+       gain can quickly reach the increased gain limit.
+
+    Q: Could this break apps that don't expect the gain to go above 1?
+    A: No, because the default values for AL_MIN_GAIN and AL_MAX_GAIN remain
+       the same (0 and 1, respectively). An application that wants to remove
+       or increase the maximum effective source gain needs to explicitly set
+       AL_MAX_GAIN to something greater than 1, which was not possible before.
+
+    Q: What about the implicit clamp on the final calculated gain?
+    A: Implementations are still allowed to clamp the final gain as needed. So
+       despite all this, it is possible an implementation simply won't allow
+       the final source gain to go above 1. However, with the addition of the
+       query for the gain limit, an application can check this, know if it'll
+       work or not, and react appropriately. It also allows an implmentation
+       to have some other limit instead of (but no less than) 1.
+
+New Tokens
+
+        AL_GAIN_LIMIT_SOFT                       0x200E
+
+Additions to Specification
+
+    Modify Section 3.1.1 Simple Queries, alter the paragraph following the
+    function definitions:
+
+    ... Legal values are AL_DOPPLER_FACTOR, AL_SPEED_OF_SOUND,
+    AL_DISTANCE_MODEL, and AL_GAIN_LIMIT_SOFT. NULL destinations are quietly
+    ignored. ...
+
+    Add to Table 3.1: Numerical Query Definitions:
+
+    Name                  Description
+    --------------------  -------------------------------
+    AL_GAIN_LIMIT_SOFT    An implementation-defined maximum per-source gain
+                          limit (guaranteed to be at least 1).
+
+
+    Modify Section 4.1. Basic Listener and Source Attributes, alter the second
+    paragraph of the description of the AL_GAIN attribute:
+
+    ... AL_GAIN larger than one (i.e. amplification) is permitted for source
+    and listener. However, the implementation clamps the total gain (effective
+    gain per-source multiplied by the listener gain) according to the
+    AL_GAIN_LIMIT_SOFT global state, which is guaranteed to be at least one.
+    ...
+
+
+    Modify Section 4.3.2 Source Attributes, and alter the tables under the
+    "Bounds on Gain" header:
+
+    Name           Signature  Values         Default
+    -------------  ---------  -------------  ----------------
+    AL_MIN_GAIN    f, fv      [0.0f, any]    0.0f
+    -------------  ---------  -------------  ----------------
+    AL_MAX_GAIN    f, fv      [0.0f, any]    1.0f
