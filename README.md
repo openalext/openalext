@@ -13,7 +13,7 @@ All information is also available with Github wiki: https://github.com/openalext
 Extensions available on specific platforms
 ==========================================
 
-OpenAL Soft 1.17.1
+OpenAL Soft 1.19.1
 ------------------
 
 AL_EXT_ALAW
@@ -29,16 +29,22 @@ AL_EXT_MULAW_BFORMAT
 AL_EXT_MULAW_MCFORMATS
 AL_EXT_OFFSET
 AL_EXT_source_distance_model
+AL_EXT_SOURCE_RADIUS
+AL_EXT_STEREO_ANGLES
 AL_LOKI_quadriphonic
 AL_SOFT_block_alignment
-AL_SOFT_buffer_samples
-AL_SOFT_buffer_sub_data
 AL_SOFT_deferred_updates
 AL_SOFT_direct_channels
+AL_SOFTX_events
+AL_SOFTX_filter_gain_ex
+AL_SOFT_gain_clamp_ex
 AL_SOFT_loop_points
 AL_SOFT_MSADPCM
+AL_SOFTX_map_buffer
 AL_SOFT_source_latency
 AL_SOFT_source_length
+AL_SOFT_source_resampler
+AL_SOFT_source_spatialize
 ALC_ENUMERATE_ALL_EXT
 ALC_ENUMERATION_EXT
 ALC_EXT_CAPTURE
@@ -46,10 +52,11 @@ ALC_EXT_DEDICATED
 ALC_EXT_disconnect
 ALC_EXT_EFX
 ALC_EXT_thread_local_context
+ALC_SOFT_device_clock
 ALC_SOFT_HRTF
 ALC_SOFT_loopback
+ALC_SOFT_output_limiter
 ALC_SOFT_pause_device
-ALC_SOFTX_device_clock
 
 OpenAL (native), Mac OS X 10.9.5
 --------------------------------
