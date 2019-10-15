@@ -1,0 +1,74 @@
+Name
+
+    ALC_SOFT_output_limiter
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+   Complete
+
+Dependencies
+
+    This extension is written against the OpenAL 1.1 specification.
+    This extension interacts with ALC_SOFT_HRTF.
+
+Overview
+
+    This extension allows an application to control OpenAL Soft's output
+    limiter. OpenAL Soft 1.18 adds an output limiter to prevent excessive
+    clipping on the output, and this extension allows applications to turn it
+    off or on.
+
+Issues
+
+    Q: This seems rather basic for handling an output limiter. Couldn't there
+       be more control over its behavior?
+    A: Yes there could be control over other parameters, like the level limit,
+       attack and release rate, and even an upper and lower level limit.
+       However, rather than delaying the 1.18 release, or making the release
+       without the application having any control, a simple on-off toggle can
+       be added now and a future extension can provide more parameters to
+       control.
+
+New Procedures and Functions
+
+    ALCboolean alcResetDeviceSOFT(ALCdevice *device, const ALCint *attrList);
+    (from ALC_SOFT_HRTF)
+
+New Tokens
+
+    Accepted as part of the <attrList> parameter of alcCreateContext and
+    alcDeviceResetSOFT, and as the <paramName> parameter of alcGetIntegerv:
+
+        ALC_OUTPUT_LIMITER_SOFT                  0x199A
+
+    Accepted as part of the <attrList> parameter of alcCreateContext and
+    alcDeviceResetSOFT, for the ALC_OUTPUT_LIMITER_SOFT attribute:
+
+        ALC_DONT_CARE_SOFT                       0x0002 (from ALC_SOFT_HRTF)
+
+Additions to Specification
+
+    Toggling the output limiter of a device
+
+    An output device may apply a limiter to the maximum amplitude of the
+    rendered mix, to prevent distortion from excessive clipping. The default
+    state of the limiter is implementation-defined, however an application may
+    request to turn it off or on by specifying the ALC_OUTPUT_LIMITER_SOFT
+    attribute during context creation or device reset. Valid values for the
+    attribute are ALC_FALSE to turn it off, ALC_TRUE to turn it on, and
+    ALC_DONT_CARE_SOFT to let the AL decide.
+
+    The current state of the limiter can be queried by calling alcGetIntegerv
+    with the ALC_OUTPUT_LIMITER_SOFT attribute. This will return ALC_FALSE or
+    ALC_TRUE depending if the limiter is currently disabled or enabled. It
+    will not return ALC_DONT_CARE_SOFT even if that was last specified.
+
+Errors
