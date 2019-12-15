@@ -13,7 +13,7 @@ All information is also available with Github wiki: https://github.com/openalext
 Extensions available on specific platforms
 ==========================================
 
-OpenAL Soft 1.19.1
+OpenAL Soft 1.20.0
 ------------------
 
 AL_EXT_ALAW
