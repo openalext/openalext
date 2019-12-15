@@ -1,0 +1,117 @@
+Name
+
+    AL_SOFT_source_spatialize
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+
+Overview
+
+    This extension provides more control over the spatialization behavior of
+    sources. By default, OpenAL will spatialize sources playing a mono buffer
+    and not spatialize sources playing a multi-channel buffer. Spatialization
+    features include positional panning, distance attenuation, cone-related
+    attenuation, and doppler effects. This extension allows such features to
+    be enabled and disabled per-source independently of the buffer format.
+
+Issues
+
+    Q: Most 3D audio systems don't allow panning non-mono sources due to
+       problems with correctly rendering the soundfield in 3D space. How is
+       this dealt with?
+    A: When a spatialized source plays a non-mono buffer and has a non-0
+       distance from the listener, the channels are down-mixed to mono and
+       panned as appropriate (that is, all channels occupy the same spot in
+       3D space). An exception is the LFE channel of buffer formats that
+       include one. The LFE input is sent separately to LFE output as normal,
+       rather than being down-mixed and panned. It is still influenced by
+       distance and cone attenuation however.
+
+       When such a source occupies the same position as the listener, it is
+       played with separated channels as if it was not spatialized (including
+       being unaffected by listener orientation). But it still receives
+       doppler effects and cone-related attenuation.
+
+    Q: When a multi-channel source is down-mixed for spatialization, is any
+       extra attenuation applied from multiple channels occupying the same
+       space?
+    A: Typically down-mixing multi-channel to mono sees a gain correction of
+       1/num_channels to preserve peak amplitude, or sqrt(1/num_channels) to
+       preserve the apparent loudness. However, not applying the given
+       correction gives full control to the application to do what it wants
+       without OpenAL in the way.
+
+       This extension applies a gain correction of 1/num_channels when down-
+       mixing a panned multi-channel source. For input sounds that don't clip,
+       this ensures no clipping when the source is panned. Be aware that the
+       number of channels excludes LFE input since it's sent separately to LFE
+       output, i.e. it's not included in the down-mix.
+
+    Q: What happens to a mono source that is played without spatizalization?
+    A: A mono source without spatialization will not have distance or cone
+       attenuation, directional panning, or doppler effects, as expected. Its
+       perceived location may either be centered (i.e. equal energy from all
+       directions) or front-center, but its perceived location should be
+       consistent with a 0-distance spatialized mono source.
+
+New Procedures and Functions
+
+        None.
+
+New Tokens
+
+    Accepted as the <param> parameter of alSourcei, alSourceiv, alGetSourcei,
+    and alGetSourceiv:
+
+        AL_SOURCE_SPATIALIZE_SOFT                0x1214
+
+    Accepted as the <value> of the AL_SOURCE_SPATIALIZE_SOFT property:
+
+        AL_AUTO_SOFT                             0x0002
+
+Additions to Specification
+
+    Controlling Source Spatialization
+
+    A source may have spatialization features applied depending on its
+    AL_SOURCE_SPATIALIZE_SOFT property. Valid values for the property are
+    AL_FALSE, AL_TRUE, and AL_AUTO_SOFT. When set to AL_FALSE, spatialization
+    features are never applied to the source. When set to AL_TRUE, they are
+    always applied. When set to AL_AUTO_SOFT, they are applied if playing a
+    buffer with one channel, and not if the buffer has more than one channel.
+    The default is AL_AUTO_SOFT.
+
+    When spatialization features are applied on a source playing a non-mono
+    buffer, if the source occupies the same 3D position as the listener the
+    buffer's channels are placed around the listener according to the format
+    (e.g. a stereo buffer has the left channel 30 degrees left of front, and
+    the right channel 30 degrees right of front). This panning is NOT effected
+    by the source direction or listener orientation.
+
+    If the source does not occupy the same 3D position as the listener, the
+    proper panning direction is calculated and all channels of the buffer will
+    be panned to that direction (effectively down-mixing the buffer to mono
+    dynamically). The buffer's channels will also receive a gain correction of
+    1/num_channels when panned, to preserve peak amplitude of the mixed
+    channels. An exception is the LFE channel in buffer formats that include
+    one. The LFE channel may be sent to the LFE output as normal and not be
+    part of the panned mix, however it is still attenuated according to the
+    source distance and cone.
+
+Errors
+
+    An AL_INVALID_VALUE error is generated if the value specified for
+    AL_SOURCE_SPATIALIZE_SOFT is not AL_FALSE, AL_TRUE, or AL_AUTO_SOFT.

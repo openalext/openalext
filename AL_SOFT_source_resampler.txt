@@ -1,0 +1,124 @@
+Name
+
+    AL_SOFT_source_resampler
+
+Contributors
+
+    Chris Robinson
+
+Contact
+
+    Chris Robinson (chris.kcat 'at' gmail.com)
+
+Status
+
+    Complete.
+
+Dependencies
+
+    This extension is for OpenAL 1.1.
+
+Overview
+
+    This extension provides a method for applications to use different
+    resamplers for sources. OpenAL automatically resamples when playing
+    a source at a sample rate that don't match the device's sample rate, but
+    the resampling method is left unspecified. One could assume it would use
+    the "best" resample method available, but this gives no clear information
+    about what's used nor any way to choose between quality or performance.
+    Further, some applications may prefer lower quality resamplers for its
+    spectral properties.
+
+Issues
+
+    Q: What resampling methods should be defined?
+    A: They'll be implementation defined. This avoids forcing specific methods
+       upon implementations, as well as allowing implementations to expose
+       methods without requiring predefined enum values for them.
+
+    Q: How is the resampler specified?
+    A: Resamplers are identified by index. The number of available resamplers
+       is queried by calling alGetInteger[v] with AL_NUM_RESAMPLERS_SOFT,
+       indicating 0 to count-1 are valid resampler indices. The default
+       resampler sources use can be queried by calling alGetInteger with
+       AL_DEFAULT_RESAMPLER_SOFT. The resampler used by a source can be
+       changed by calling alSourcei with AL_SOURCE_RESAMPLER_SOFT and a valid
+       resampler index.
+
+       The name of each resampler can be queried using the alGetStringiSOFT
+       function with AL_RESAMPLER_NAME_SOFT and a valid resampler index. The
+       strings returned are displayable UTF-8 encoded names.
+       
+       Note that it is strongly encouraged for implementors that there be a
+       general progression of resampler quality with index. That is, indices
+       closer to 0 should be of lower quality, and the higher index values
+       should have higher quality resampling.
+
+New Procedures and Functions
+
+        const ALchar *alGetStringiSOFT(ALenum pname, ALsizei index);
+
+New Tokens
+
+    Accepted as the <pname> parameter of alGetInteger and alGetIntegerv:
+
+        AL_NUM_RESAMPLERS_SOFT                   0x1210
+        AL_DEFAULT_RESAMPLER_SOFT                0x1211
+
+    Accepted as the <param> parameter of alSourcei, alSourceiv, alGetSourcei,
+    and alGetSourceiv:
+
+        AL_SOURCE_RESAMPLER_SOFT                 0x1212
+
+    Accepted as the <pname> parameter of alGetStringiSOFT:
+
+        AL_RESAMPLER_NAME_SOFT                   0x1213
+
+Additions to Specification
+
+    Resampler Enumeration
+
+    OpenAL performs resampling when the sample rate of a source (considering
+    the buffer's sample rate, the AL_PITCH property, doppler effects, etc)
+    does not match the device's sample rate. Resampling may also occur when
+    there's a fractional sample offset creating a phase offset.
+
+    The available resamplers are implementation defined. The number of
+    resamplers provided by the implementation is queried with
+    AL_NUM_RESAMPLERS_SOFT. At least one resampler is guaranteed to be
+    available. Resamplers are identified by index, which range from 0 to
+    num_resamplers-1 (inclusive). The default resampler index is queried with
+    AL_DEFAULT_RESAMPLER_SOFT. These are global numeric state queries, made
+    using the alGetInteger or alGetIntegerv functions.
+
+    The resampler names are retrieved by calling
+
+        const ALchar *alGetStringiSOFT(ALenum pname, ALsizei index);
+
+    with <pname> as AL_RESAMPLER_NAME_SOFT and <index> being a valid resampler
+    index. The returned string is a UTF-8 encoded displayable name identifying
+    the resampler.
+
+
+    Resampler Selection
+
+    The resampling method can be set and queried using the source attribute:
+
+    Name                        Signature  Values      Default
+    --------------------------  ---------  ----------  -------
+    AL_SOURCE_RESAMPLER_SOFT    i, iv      [0, I/D]    I/D
+
+    Specifies the resampler index used by the source when resampling is to be
+    done. Each source may have its own resampler set without affecting other
+    sources. The range of and default values are implementation-defined, and
+    are queried using AL_NUM_RESAMPLERS_SOFT and AL_DEFAULT_RESAMPLER_SOFT
+    respectively.
+
+Errors
+
+    An AL_INVALID_VALUE error is generated if the index provided to
+    alGetStringiSOFT when querying AL_RESAMPLER_NAME_SOFT is not a valid
+    resampler index.
+
+    An AL_INVALID_VALUE error is generated if the value provided for the
+    AL_SOURCE_RESAMPLER_SOFT attribute is not a valid resampler index.
